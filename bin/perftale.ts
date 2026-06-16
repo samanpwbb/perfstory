@@ -2,17 +2,17 @@
 /**
  * perftale CLI.
  *
- * Step 2: `analyze <trace.json[.gz]> [--fps <n>]` streams the trace once,
- * reports the noise reduction, and prints the frame model (refresh, dropped
- * frames, hitches, and where main-thread frame time goes). JS attribution and
- * the full summary land in later steps.
+ * `analyze <trace.json[.gz]> [--fps <n>] [--debug]` streams the trace once and
+ * prints the frame model. The default report is consumer-facing (smoothness
+ * verdict + where the main-thread budget goes); `--debug` adds the pipeline's
+ * own diagnostics (noise reduction, pipeline latency, dropped-frame clusters).
  */
 import { analyzeTrace, type Analysis } from '../src/analyze.ts';
 
 const USAGE = `perftale — Chrome trace → actionable insights
 
 Usage:
-  perftale analyze <trace.json[.gz]> [--fps <n>]
+  perftale analyze <trace.json[.gz]> [--fps <n>] [--debug]
 `;
 
 function pct(part: number, whole: number): string {
@@ -20,18 +20,27 @@ function pct(part: number, whole: number): string {
   return `${((part / whole) * 100).toFixed(1)}%`;
 }
 
-function report(file: string, analysis: Analysis, elapsedMs: number): string {
+function report(
+  file: string,
+  analysis: Analysis,
+  elapsedMs: number,
+  debug: boolean,
+): string {
   const { reduction: r, frames: f } = analysis;
   const out: string[] = [];
 
   out.push(`perftale — ${file}`);
-  out.push('');
-  out.push('SIZE');
-  out.push(
-    `  ${r.total.toLocaleString()} events → ${r.kept.toLocaleString()} kept ` +
-      `(${pct(r.kept, r.total)}), ${r.dropped.toLocaleString()} noise dropped ` +
-      `(${pct(r.dropped, r.total)})`,
-  );
+
+  // Pipeline plumbing — only meaningful while developing the tool.
+  if (debug) {
+    out.push('');
+    out.push('SIZE');
+    out.push(
+      `  ${r.total.toLocaleString()} events → ${r.kept.toLocaleString()} kept ` +
+        `(${pct(r.kept, r.total)}), ${r.dropped.toLocaleString()} noise dropped ` +
+        `(${pct(r.dropped, r.total)})`,
+    );
+  }
 
   out.push('');
   out.push('FRAMES');
@@ -64,11 +73,13 @@ function report(file: string, analysis: Analysis, elapsedMs: number): string {
     `  largest gap:   ${f.largestGapMs.toFixed(1)}ms at ${(f.largestGapAtMs / 1000).toFixed(2)}s ` +
       `(idle or main-thread block — see tasks)`,
   );
-  out.push(
-    `  pipeline lat.: p50 ${f.pipelineLatencyMs.p50.toFixed(1)}ms / ` +
-      `p95 ${f.pipelineLatencyMs.p95.toFixed(1)}ms / max ${f.pipelineLatencyMs.max.toFixed(1)}ms ` +
-      `(latency, not frame interval)`,
-  );
+  if (debug) {
+    out.push(
+      `  pipeline lat.: p50 ${f.pipelineLatencyMs.p50.toFixed(1)}ms / ` +
+        `p95 ${f.pipelineLatencyMs.p95.toFixed(1)}ms / max ${f.pipelineLatencyMs.max.toFixed(1)}ms ` +
+        `(latency, not frame interval)`,
+    );
+  }
 
   if (f.mainThread.length > 0) {
     out.push('');
@@ -80,7 +91,7 @@ function report(file: string, analysis: Analysis, elapsedMs: number): string {
     }
   }
 
-  if (f.droppedClusters.length > 0) {
+  if (debug && f.droppedClusters.length > 0) {
     out.push('');
     out.push('  dropped-frame clusters:');
     for (const c of f.droppedClusters) {
@@ -90,18 +101,22 @@ function report(file: string, analysis: Analysis, elapsedMs: number): string {
     }
   }
 
-  out.push('');
-  out.push(`scanned in ${(elapsedMs / 1000).toFixed(1)}s`);
+  if (debug) {
+    out.push('');
+    out.push(`scanned in ${(elapsedMs / 1000).toFixed(1)}s`);
+  }
   return out.join('\n');
 }
 
-function parseArgs(argv: string[]): { file?: string; fps?: number } {
-  const result: { file?: string; fps?: number } = {};
+function parseArgs(argv: string[]): { file?: string; fps?: number; debug: boolean } {
+  const result: { file?: string; fps?: number; debug: boolean } = { debug: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--fps') {
       const value = Number(argv[++i]);
       if (Number.isFinite(value) && value > 0) result.fps = value;
+    } else if (arg === '--debug') {
+      result.debug = true;
     } else if (arg && !arg.startsWith('-') && result.file === undefined) {
       result.file = arg;
     }
@@ -116,13 +131,15 @@ if (command !== 'analyze') {
   process.exit(0);
 }
 
-const { file, fps } = parseArgs(rest);
+const { file, fps, debug } = parseArgs(rest);
 if (!file) {
-  process.stderr.write('usage: perftale analyze <trace.json[.gz]> [--fps <n>]\n');
+  process.stderr.write(
+    'usage: perftale analyze <trace.json[.gz]> [--fps <n>] [--debug]\n',
+  );
   process.exit(1);
 }
 
 const start = performance.now();
 const analysis = await analyzeTrace(file, { ...(fps ? { fps } : {}) });
 const elapsed = performance.now() - start;
-process.stdout.write(report(file, analysis, elapsed) + '\n');
+process.stdout.write(report(file, analysis, elapsed, debug) + '\n');
