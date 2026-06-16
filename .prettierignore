@@ -1,0 +1,7 @@
+node_modules/
+.perftale/
+coverage/
+examples/
+test/fixtures/
+pnpm-lock.yaml
+*.json.gz

@@ -1,0 +1,22 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`perftale scaffold > matches the snapshot of common budgets 1`] = `
+[
+  {
+    "budgetMs": 33.333,
+    "fps": 30,
+  },
+  {
+    "budgetMs": 16.667,
+    "fps": 60,
+  },
+  {
+    "budgetMs": 11.111,
+    "fps": 90,
+  },
+  {
+    "budgetMs": 8.333,
+    "fps": 120,
+  },
+]
+`;

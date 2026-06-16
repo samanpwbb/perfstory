@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    // Node 23.6+ runs TypeScript directly by stripping types — there is no
+    // build step. tsc is used ONLY as a type checker (`tsc --noEmit`).
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "esnext",
+    "lib": ["esnext"],
+    "types": ["node"],
+
+    // Required for Node's type-stripping model:
+    "allowImportingTsExtensions": true, // relative imports keep their .ts extension
+    "verbatimModuleSyntax": true, // no import elision; `import type` stays explicit
+    "erasableSyntaxOnly": true, // forbid enums/namespaces/param-props that need codegen
+    "noEmit": true,
+    "isolatedModules": true,
+
+    // Strictness
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["bin", "src", "test", "scripts", "*.config.ts"]
+}

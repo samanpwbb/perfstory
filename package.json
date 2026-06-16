@@ -1,0 +1,47 @@
+{
+  "name": "perftale",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Turn a Chrome performance trace into actionable, agent-readable insights for animation- and interaction-heavy apps.",
+  "engines": {
+    "node": ">=23.6"
+  },
+  "bin": {
+    "perftale": "bin/perftale.ts"
+  },
+  "scripts": {
+    "analyze": "node bin/perftale.ts analyze",
+    "analyze:real": "node scripts/analyze-real.ts",
+    "fixtures": "node scripts/make-fixtures.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,js,mjs,cjs}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.9.3",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.61.1",
+    "vitest": "^4.1.9"
+  }
+}

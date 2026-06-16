@@ -1,0 +1,3 @@
+# Keep commits fast: format + lint staged files, then type-check the project.
+pnpm exec lint-staged
+pnpm typecheck

@@ -1,0 +1,2 @@
+# Fixture + snapshot tests run before push so nothing broken leaves the machine.
+pnpm test
