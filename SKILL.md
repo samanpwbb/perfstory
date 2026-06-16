@@ -17,8 +17,11 @@ or load time.
 ## Running it
 
 ```
-node bin/perftale.ts analyze <trace.json[.gz]> [--fps <n>] [--json] [--debug]
+perftale analyze <trace.json[.gz]> [--fps <n>] [--json] [--debug]
 ```
+
+(If perftale isn't linked on your PATH, run it from a clone with
+`node bin/perftale.ts analyze <trace.json[.gz]> …` — same arguments.)
 
 - Accepts `.json` or gzipped `.json.gz`; streams it, so a 350MB trace is fine.
 - `--json` writes the structured summary to `.perftale/<trace>.summary.json`
