@@ -1,6 +1,34 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "trace": "orb-ball-trace.json.gz",
+  "verdict": {
+    "smooth": true,
+    "headline": "Smooth at 60fps (0 dropped frames) — but 95% of main-thread frame time is animation; running close to budget.",
+    "bound": "animation",
+    "boundSharePct": 95.31946799956282,
+    "domainsMs": {
+      "animation": 4247.303,
+      "layout": 125.73700000000001,
+      "paint/composite": 82.821
+    },
+    "largestGap": {
+      "ms": 22.109,
+      "atMs": 3117.205,
+      "blocked": false,
+      "blockingTaskMs": null
+    },
+    "worstFreeze": null,
+    "topAppHotspot": {
+      "functionName": "sampleHeight",
+      "url": "http://localhost:5173/src/BattleScreen/render/terrain/elevationField.ts?t=1781587780948",
+      "line": 138,
+      "selfMs": 77.92299999999993
+    },
+    "notes": [
+      "Dev build detected (React dev runtime) — record a production build for representative numbers.",
+      "Browser extensions were active during capture — engine/native time is inflated."
+    ]
+  },
   "frames": {
     "refresh": {
       "hz": 60,

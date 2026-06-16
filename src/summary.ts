@@ -3,9 +3,10 @@ import type { FrameModel } from './frames.ts';
 import type { ProfileModel } from './profile.ts';
 import type { ReductionStats } from './reduce.ts';
 import type { TaskModel } from './tasks.ts';
+import type { Verdict } from './verdict.ts';
 
 /** Bump when the summary shape changes in a way that invalidates saved artifacts. */
-export const SUMMARY_SCHEMA_VERSION = 1;
+export const SUMMARY_SCHEMA_VERSION = 2;
 
 /**
  * The persisted artifact. Deliberately free of wall-clock timestamps so saved
@@ -14,6 +15,7 @@ export const SUMMARY_SCHEMA_VERSION = 1;
 export interface Summary {
   schemaVersion: number;
   trace: string;
+  verdict: Verdict;
   frames: FrameModel;
   profile: ProfileModel | null;
   tasks: TaskModel;
@@ -24,6 +26,7 @@ export function buildSummary(trace: string, analysis: Analysis): Summary {
   return {
     schemaVersion: SUMMARY_SCHEMA_VERSION,
     trace,
+    verdict: analysis.verdict,
     frames: analysis.frames,
     profile: analysis.profile,
     tasks: analysis.tasks,

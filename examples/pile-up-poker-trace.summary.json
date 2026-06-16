@@ -1,6 +1,40 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "trace": "pile-up-poker-trace.json.gz",
+  "verdict": {
+    "smooth": false,
+    "headline": "Janky: 14 dropped frames (4.4%); worst freeze 422ms at 2.23s.",
+    "bound": "animation",
+    "boundSharePct": 46.03174603174603,
+    "domainsMs": {
+      "animation": 180.757,
+      "layout": 40.693,
+      "paint/composite": 171.229
+    },
+    "largestGap": {
+      "ms": 505.249,
+      "atMs": 4483.189,
+      "blocked": false,
+      "blockingTaskMs": null
+    },
+    "worstFreeze": {
+      "ms": 422.011,
+      "atMs": 2234.655,
+      "blocked": false,
+      "blockingTaskMs": null
+    },
+    "topAppHotspot": {
+      "functionName": "wrappedSelector",
+      "url": "http://localhost:3000/@fs/Users/samanbemel-benrud/puzmo_repos/games/packages/lib/createDraftSafeSelector.ts",
+      "line": 7,
+      "selfMs": 3.6079999999999997
+    },
+    "notes": [
+      "Dev build detected (React dev runtime) — record a production build for representative numbers.",
+      "Browser extensions were active during capture — engine/native time is inflated.",
+      "Large engine/native bucket (987ms) — much of it is console-instrumentation overhead from recording with DevTools attached; real app JS is 227ms."
+    ]
+  },
   "frames": {
     "refresh": {
       "hz": 60,

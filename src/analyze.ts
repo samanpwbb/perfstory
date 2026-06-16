@@ -9,12 +9,15 @@ import { Reducer, type ReductionStats } from './reduce.ts';
 import { streamTraceEvents } from './stream.ts';
 import { buildTaskModel, isTaskEvent, type TaskModel } from './tasks.ts';
 import type { TraceEvent } from './trace-events.ts';
+import { buildVerdict, type Verdict } from './verdict.ts';
 
 export interface Analysis {
-  reduction: ReductionStats;
+  /** The conclusions, derived from the models below. */
+  verdict: Verdict;
   frames: FrameModel;
   profile: ProfileModel | null;
   tasks: TaskModel;
+  reduction: ReductionStats;
 }
 
 /** Frame events that establish the frame model's time origin (excludes PipelineReporter). */
@@ -74,13 +77,19 @@ export async function analyzeTrace(
   const warmup = warmupEndUs > 0 ? { warmupEndUs } : {};
   const pid = mainPid !== undefined ? { mainPid } : {};
   const originUs = Number.isFinite(frameOriginUs) ? frameOriginUs : 0;
+
+  const frames = buildFrameModel(frameEvents, {
+    ...(options.fps ? { fps: options.fps } : {}),
+    ...warmup,
+  });
+  const profile = buildProfileModel(profiles.list(), { ...warmup, ...pid });
+  const tasks = buildTaskModel(taskEvents, { originUs, ...warmup, ...pid });
+
   return {
+    verdict: buildVerdict(frames, profile, tasks),
+    frames,
+    profile,
+    tasks,
     reduction: reducer.finish(),
-    frames: buildFrameModel(frameEvents, {
-      ...(options.fps ? { fps: options.fps } : {}),
-      ...warmup,
-    }),
-    profile: buildProfileModel(profiles.list(), { ...warmup, ...pid }),
-    tasks: buildTaskModel(taskEvents, { originUs, ...warmup, ...pid }),
   };
 }

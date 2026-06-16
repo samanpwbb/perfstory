@@ -12,7 +12,6 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { analyzeTrace, type Analysis } from '../src/analyze.ts';
 import { buildSummary, serializeSummary } from '../src/summary.ts';
-import { blockingTask } from '../src/tasks.ts';
 
 const USAGE = `perftale — Chrome trace → actionable insights
 
@@ -49,18 +48,27 @@ function report(
   elapsedMs: number,
   debug: boolean,
 ): string {
-  const { reduction: r, frames: f, tasks } = analysis;
+  const { verdict: v, reduction: r, frames: f, tasks } = analysis;
   const out: string[] = [];
 
-  // Resolve a [start,end] window against the long tasks: blocked vs idle.
-  const gapVerdict = (startMs: number, durMs: number): string => {
-    const block = blockingTask(tasks.longTasks, startMs, startMs + durMs);
-    return block
-      ? `main thread blocked by a ${block.durMs.toFixed(0)}ms task`
-      : 'idle — no long task';
-  };
-
   out.push(`perftale — ${file}`);
+
+  // The conclusion first, then the supporting numbers.
+  out.push('');
+  out.push('VERDICT');
+  out.push(`  ${v.headline}`);
+  if (v.bound !== 'idle') {
+    out.push(
+      `  bound:    ${v.bound} (${v.boundSharePct.toFixed(0)}% of main-thread frame time)`,
+    );
+  }
+  if (v.topAppHotspot) {
+    const h = v.topAppHotspot;
+    out.push(
+      `  hotspot:  ${h.functionName}  ${shortenUrl(h.url)}:${h.line} (${h.selfMs.toFixed(0)}ms, top app fn)`,
+    );
+  }
+  for (const note of v.notes) out.push(`  note:     ${note}`);
 
   // Pipeline plumbing — only meaningful while developing the tool.
   if (debug) {
@@ -94,13 +102,10 @@ function report(
   out.push(
     `  dropped:       ${f.dropped} frames — ${f.droppedPct.toFixed(1)}% of attempted frames`,
   );
-  if (f.dropped > 0) {
-    const block = blockingTask(
-      tasks.longTasks,
-      f.worstFreezeAtMs,
-      f.worstFreezeAtMs + f.worstFreezeMs,
-    );
-    const cause = block ? `, blocked by a ${block.durMs.toFixed(0)}ms task` : '';
+  if (v.worstFreeze) {
+    const cause = v.worstFreeze.blocked
+      ? `, blocked by a ${(v.worstFreeze.blockingTaskMs ?? 0).toFixed(0)}ms task`
+      : '';
     out.push(
       `  worst freeze:  ${f.worstFreezeMs.toFixed(1)}ms at ${(f.worstFreezeAtMs / 1000).toFixed(2)}s ` +
         `(${f.jankGapCount} freeze${f.jankGapCount === 1 ? '' : 's'} from dropped frames${cause})`,
@@ -108,7 +113,7 @@ function report(
   }
   out.push(
     `  largest gap:   ${f.largestGapMs.toFixed(1)}ms at ${(f.largestGapAtMs / 1000).toFixed(2)}s ` +
-      `(${gapVerdict(f.largestGapAtMs, f.largestGapMs)})`,
+      `(${v.largestGap.blocked ? `main thread blocked by a ${(v.largestGap.blockingTaskMs ?? 0).toFixed(0)}ms task` : 'idle — no long task'})`,
   );
   if (debug) {
     out.push(

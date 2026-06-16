@@ -32,6 +32,19 @@ DevTools → Performance → Record → reload/interact → Stop → "Save profi
 
 ## How to read the output
 
+Read top to bottom — it's an inverted pyramid: the conclusion first, then the
+numbers that support it.
+
+**VERDICT** — the conclusion, read this first.
+
+- `headline` — smooth-or-janky in one line (dropped frames, worst freeze + its
+  blocking task).
+- `bound` — the dominant main-thread domain (`animation`, `layout`, or
+  `paint/composite`) and its share. This is where to look.
+- `hotspot` — the top first-party (`APP`) function to open, with `file:line`.
+- `note` — caveats that temper the numbers (dev build, extensions active, large
+  instrumentation-overhead bucket). Heed these before trusting magnitudes.
+
 **FRAMES** — the smoothness verdict.
 
 - `refresh` — detected display rate; the per-frame budget is `1000/hz` ms (16.67ms at
