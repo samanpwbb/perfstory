@@ -1,0 +1,566 @@
+{
+  "schemaVersion": 3,
+  "trace": "orb-ball.trace.json.gz",
+  "verdict": {
+    "smooth": true,
+    "headline": "Smooth at 60fps (0 dropped frames) — but 96% of main-thread frame time is animation; running close to budget.",
+    "bound": "animation",
+    "boundSharePct": 96.24836578721543,
+    "domainsMs": {
+      "animation": 167.117,
+      "layout": 3.8550000000000004,
+      "paint/composite": 2.659
+    },
+    "largestGap": {
+      "ms": 19.739,
+      "atMs": 420.041,
+      "blocked": false,
+      "blockingTaskMs": null
+    },
+    "worstFreeze": null,
+    "topAppHotspot": {
+      "functionName": "sampleHeight",
+      "url": "http://localhost:5173/src/BattleScreen/render/terrain/elevationField.ts?t=1781587780948",
+      "line": 138,
+      "selfMs": 2.546
+    },
+    "gc": {
+      "totalMs": 12.832,
+      "scavengeCount": 1,
+      "markCompactCount": 1,
+      "scavengeHz": 15.549923027881011,
+      "youngFreedMB": 0,
+      "topSuspect": {
+        "functionName": "isCircleInsidePerimeter",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/boardShape.ts",
+        "line": 302,
+        "preGcMs": 1.078,
+        "app": true
+      }
+    },
+    "notes": [
+      "Dev build detected (React dev runtime) — record a production build for representative numbers.",
+      "Browser extensions were active during capture — engine/native time is inflated.",
+      "GC pressure: 1 scavenge (15.5/s) + 1 mark-compact cost 13ms of main-thread pauses. Hottest JS before scavenges (heuristic): isCircleInsidePerimeter — likely high allocation. Reduce per-frame allocations (pool/reuse objects); confirm with a heap allocation profile."
+    ]
+  },
+  "frames": {
+    "refresh": {
+      "hz": 60,
+      "intervalMs": 16.666666666666668,
+      "source": "detected",
+      "confidence": 1
+    },
+    "warmupMs": 412.337,
+    "windowMs": 270.22,
+    "presented": 17,
+    "dropped": 0,
+    "droppedPct": 0,
+    "presentationFps": 62.91170157649322,
+    "worstFreezeMs": 0,
+    "worstFreezeAtMs": 0,
+    "jankGapCount": 0,
+    "largestGapMs": 19.739,
+    "largestGapAtMs": 420.041,
+    "mainThread": [
+      {
+        "key": "animate_us",
+        "label": "animation / rAF callbacks",
+        "totalMs": 167.107,
+        "sharePct": 96.24260644700543
+      },
+      {
+        "key": "update_layers_us",
+        "label": "update layers",
+        "totalMs": 1.746,
+        "sharePct": 1.0055808006634759
+      },
+      {
+        "key": "prepaint_us",
+        "label": "pre-paint",
+        "totalMs": 1.631,
+        "sharePct": 0.9393483882486422
+      },
+      {
+        "key": "layout_update_us",
+        "label": "layout",
+        "totalMs": 1.157,
+        "sharePct": 0.6663556622953274
+      },
+      {
+        "key": "style_update_us",
+        "label": "style recalc",
+        "totalMs": 0.891,
+        "sharePct": 0.5131572127097119
+      },
+      {
+        "key": "paint_us",
+        "label": "paint",
+        "totalMs": 0.788,
+        "sharePct": 0.45383600854686085
+      },
+      {
+        "key": "compositing_inputs_us",
+        "label": "compositing inputs",
+        "totalMs": 0.176,
+        "sharePct": 0.10136438769574557
+      },
+      {
+        "key": "composite_commit_us",
+        "label": "composite commit",
+        "totalMs": 0.125,
+        "sharePct": 0.0719917526248193
+      },
+      {
+        "key": "handle_input_events_us",
+        "label": "input handlers",
+        "totalMs": 0.01,
+        "sharePct": 0.0057593402099855445
+      }
+    ],
+    "pipelineLatencyMs": {
+      "p50": 40.66,
+      "p95": 57.333,
+      "max": 57.351
+    },
+    "droppedClusters": []
+  },
+  "profile": {
+    "tid": 7773354,
+    "sampleCount": 30665,
+    "activeMs": 233.95,
+    "idleMs": 42.7,
+    "gcMs": 19.246,
+    "nativeMs": 139.353,
+    "jsMs": 75.351,
+    "functions": [
+      {
+        "functionName": "_getGlobalBoundsRecursive",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-VTQOOOML.js?v=200eec3e",
+        "line": 661,
+        "col": 28,
+        "selfMs": 4.545999999999999,
+        "sharePct": 6.033098432668444,
+        "app": false
+      },
+      {
+        "functionName": "updateLayout",
+        "url": "http://localhost:5173/node_modules/.vite/deps/@pixi_layout.js?v=200eec3e",
+        "line": 481,
+        "col": 15,
+        "selfMs": 3.2449999999999997,
+        "sharePct": 4.306512189619248,
+        "app": false
+      },
+      {
+        "functionName": "updateTransformAndChildren",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-OKHOTB3R.js?v=200eec3e",
+        "line": 735,
+        "col": 36,
+        "selfMs": 3.093,
+        "sharePct": 4.104789584743401,
+        "app": false
+      },
+      {
+        "functionName": "sampleHeight",
+        "url": "http://localhost:5173/src/BattleScreen/render/terrain/elevationField.ts?t=1781587780948",
+        "line": 138,
+        "col": 19,
+        "selfMs": 2.546,
+        "sharePct": 3.378853631670449,
+        "app": true
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "http://localhost:5173/src/BattleScreen/render/terrain/TerrainSpriteLayer.tsx?t=1781594641216",
+        "line": 190,
+        "col": 21,
+        "selfMs": 1.8410000000000002,
+        "sharePct": 2.4432323393186555,
+        "app": true
+      },
+      {
+        "functionName": "sortLinked",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-KZO5MPJJ.js?v=200eec3e",
+        "line": 258,
+        "col": 20,
+        "selfMs": 1.7970000000000002,
+        "sharePct": 2.3848389536966996,
+        "app": false
+      },
+      {
+        "functionName": "collectRenderables",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-VTQOOOML.js?v=200eec3e",
+        "line": 419,
+        "col": 21,
+        "selfMs": 1.7089999999999999,
+        "sharePct": 2.2680521824527875,
+        "app": false
+      },
+      {
+        "functionName": "positionBlade",
+        "url": "http://localhost:5173/src/BattleScreen/render/terrain/TerrainSpriteLayer.tsx?t=1781594641216",
+        "line": 233,
+        "col": 29,
+        "selfMs": 1.3849999999999998,
+        "sharePct": 1.838064524691112,
+        "app": true
+      },
+      {
+        "functionName": "isEarHashed",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-KZO5MPJJ.js?v=200eec3e",
+        "line": 115,
+        "col": 21,
+        "selfMs": 1.3210000000000002,
+        "sharePct": 1.7531286910591766,
+        "app": false
+      },
+      {
+        "functionName": "t1",
+        "url": "http://localhost:5173/src/BattleScreen/render/camera/perspective.ts?t=1781587780939",
+        "line": 275,
+        "col": 10,
+        "selfMs": 1.31,
+        "sharePct": 1.7385303446536875,
+        "app": true
+      },
+      {
+        "functionName": "measureHostInstance",
+        "url": "chrome-extension://fmkadmapgofadopljbjfkapdkoienihi/build/installHook.js",
+        "line": 1,
+        "col": 93979,
+        "selfMs": 1.2950000000000002,
+        "sharePct": 1.7186235086462025,
+        "app": false
+      },
+      {
+        "functionName": "isCircleInsidePerimeter",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/boardShape.ts",
+        "line": 302,
+        "col": 40,
+        "selfMs": 1.243,
+        "sharePct": 1.6496131438202548,
+        "app": true
+      },
+      {
+        "functionName": "exports.jsxDEV",
+        "url": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=200eec3e",
+        "line": 239,
+        "col": 32,
+        "selfMs": 1.218999999999999,
+        "sharePct": 1.6177622062082773,
+        "app": false
+      },
+      {
+        "functionName": "captureCurrentFrame",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/utils/frameChangeTracker.ts",
+        "line": 21,
+        "col": 22,
+        "selfMs": 1.07,
+        "sharePct": 1.420020968533928,
+        "app": true
+      },
+      {
+        "functionName": "simpleHash",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/utils/stateChecksum.ts",
+        "line": 21,
+        "col": 20,
+        "selfMs": 1.03,
+        "sharePct": 1.3669360725139679,
+        "app": true
+      },
+      {
+        "functionName": "collectRenderablesSimple",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-VTQOOOML.js?v=200eec3e",
+        "line": 3112,
+        "col": 27,
+        "selfMs": 0.917,
+        "sharePct": 1.2169712412575813,
+        "app": false
+      },
+      {
+        "functionName": "break",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-KZO5MPJJ.js?v=200eec3e",
+        "line": 1374,
+        "col": 8,
+        "selfMs": 0.8490000000000001,
+        "sharePct": 1.1267269180236494,
+        "app": false
+      },
+      {
+        "functionName": "_updateSize",
+        "url": "http://localhost:5173/node_modules/.vite/deps/@pixi_layout.js?v=200eec3e",
+        "line": 446,
+        "col": 14,
+        "selfMs": 0.762,
+        "sharePct": 1.0112672691802365,
+        "app": false
+      },
+      {
+        "functionName": "_onUpdate",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-VTQOOOML.js?v=200eec3e",
+        "line": 1633,
+        "col": 12,
+        "selfMs": 0.723,
+        "sharePct": 0.9595094955607756,
+        "app": false
+      },
+      {
+        "functionName": "projectPoint",
+        "url": "http://localhost:5173/src/BattleScreen/render/camera/perspective.ts?t=1781587780939",
+        "line": 62,
+        "col": 29,
+        "selfMs": 0.721,
+        "sharePct": 0.9568552507597775,
+        "app": true
+      },
+      {
+        "functionName": "updateEntityMovement",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/Simulation/MovementSystem.ts",
+        "line": 226,
+        "col": 30,
+        "selfMs": 0.709,
+        "sharePct": 0.9409297819537896,
+        "app": true
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "http://localhost:5173/src/BattleScreen/render/terrain/TerrainSpriteLayer.tsx?t=1781594641216",
+        "line": 183,
+        "col": 17,
+        "selfMs": 0.677,
+        "sharePct": 0.8984618651378217,
+        "app": true
+      },
+      {
+        "functionName": "getAttribute",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-D7CXWU2I.js?v=200eec3e",
+        "line": 6321,
+        "col": 15,
+        "selfMs": 0.652,
+        "sharePct": 0.8652838051253467,
+        "app": false
+      },
+      {
+        "functionName": "extractSnapshot",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/Simulation/Simulation.ts",
+        "line": 879,
+        "col": 18,
+        "selfMs": 0.64,
+        "sharePct": 0.8493583363193588,
+        "app": true
+      },
+      {
+        "functionName": "break",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-OKHOTB3R.js?v=200eec3e",
+        "line": 1075,
+        "col": 8,
+        "selfMs": 0.635,
+        "sharePct": 0.8427227243168637,
+        "app": false
+      }
+    ]
+  },
+  "tasks": {
+    "mainTid": 7773354,
+    "longTaskMs": 50,
+    "longTasks": [],
+    "longTaskCount": 0,
+    "totalLongTaskMs": 0
+  },
+  "gc": {
+    "mainTid": 7773354,
+    "scavengeCount": 1,
+    "scavengeMs": 4.295,
+    "markCompactCount": 1,
+    "markCompactMs": 8.537,
+    "totalGcMs": 12.832,
+    "youngFreedBytes": 0,
+    "scavengeHz": 15.549923027881011,
+    "pauses": [
+      {
+        "kind": "mark-compact",
+        "startMs": 514.995,
+        "durMs": 8.537,
+        "freedBytes": 0
+      },
+      {
+        "kind": "scavenge",
+        "startMs": 450.686,
+        "durMs": 4.295,
+        "freedBytes": 0
+      }
+    ],
+    "suspectedAllocators": [
+      {
+        "functionName": "isCircleInsidePerimeter",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/boardShape.ts",
+        "line": 302,
+        "preGcMs": 1.078,
+        "sharePct": 6.243484304413299,
+        "app": true
+      },
+      {
+        "functionName": "_getGlobalBoundsRecursive",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-VTQOOOML.js?v=200eec3e",
+        "line": 661,
+        "preGcMs": 0.8430000000000001,
+        "sharePct": 4.882427892968842,
+        "app": false
+      },
+      {
+        "functionName": "simpleHash",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/utils/stateChecksum.ts",
+        "line": 21,
+        "preGcMs": 0.773,
+        "sharePct": 4.477006834240705,
+        "app": true
+      },
+      {
+        "functionName": "captureCurrentFrame",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/utils/frameChangeTracker.ts",
+        "line": 21,
+        "preGcMs": 0.661,
+        "sharePct": 3.828333140275687,
+        "app": true
+      },
+      {
+        "functionName": "extractSnapshot",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/Simulation/Simulation.ts",
+        "line": 879,
+        "preGcMs": 0.64,
+        "sharePct": 3.7067068226572455,
+        "app": true
+      },
+      {
+        "functionName": "updateEntityMovement",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/Simulation/MovementSystem.ts",
+        "line": 226,
+        "preGcMs": 0.579,
+        "sharePct": 3.3534113286227267,
+        "app": true
+      },
+      {
+        "functionName": "measureHostInstance",
+        "url": "chrome-extension://fmkadmapgofadopljbjfkapdkoienihi/build/installHook.js",
+        "line": 1,
+        "preGcMs": 0.5780000000000001,
+        "sharePct": 3.347619599212326,
+        "app": false
+      },
+      {
+        "functionName": "hasValidKey",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-D5R4NKOJ.js?v=200eec3e",
+        "line": 138,
+        "preGcMs": 0.501,
+        "sharePct": 2.9016564346113753,
+        "app": false
+      },
+      {
+        "functionName": "sortLinked",
+        "url": "http://localhost:5173/node_modules/.vite/deps/chunk-KZO5MPJJ.js?v=200eec3e",
+        "line": 258,
+        "preGcMs": 0.41100000000000003,
+        "sharePct": 2.3804007876752005,
+        "app": false
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "http://localhost:5173/@fs/Users/samanbemel-benrud/personal_repos/orb-ball/packages/shared/Simulation/Simulation.ts",
+        "line": 484,
+        "preGcMs": 0.4,
+        "sharePct": 2.3166917641607787,
+        "app": true
+      }
+    ]
+  },
+  "size": {
+    "total": 10868,
+    "kept": 10590,
+    "dropped": 278,
+    "droppedByReason": {
+      "inspector": 200,
+      "metadata": 38,
+      "source-rundown": 40
+    },
+    "keptByCategory": [
+      {
+        "cat": "disabled-by-default-devtools.timeline",
+        "count": 3150
+      },
+      {
+        "cat": "devtools.timeline,disabled-by-default-v8.gc",
+        "count": 1840
+      },
+      {
+        "cat": "devtools.timeline",
+        "count": 1830
+      },
+      {
+        "cat": "cc,benchmark,disabled-by-default-devtools.timeline.frame",
+        "count": 1014
+      },
+      {
+        "cat": "blink.user_timing",
+        "count": 728
+      },
+      {
+        "cat": "cppgc",
+        "count": 696
+      },
+      {
+        "cat": "v8",
+        "count": 598
+      },
+      {
+        "cat": "disabled-by-default-v8.cpu_profiler",
+        "count": 385
+      },
+      {
+        "cat": "disabled-by-default-devtools.timeline.frame",
+        "count": 132
+      },
+      {
+        "cat": "v8.execute",
+        "count": 69
+      },
+      {
+        "cat": "blink,devtools.timeline",
+        "count": 64
+      },
+      {
+        "cat": "blink,rail",
+        "count": 35
+      },
+      {
+        "cat": "disabled-by-default-devtools.screenshot",
+        "count": 18
+      },
+      {
+        "cat": "benchmark,rail",
+        "count": 17
+      },
+      {
+        "cat": "blink,benchmark,rail,disabled-by-default-blink.debug.layout",
+        "count": 4
+      },
+      {
+        "cat": "cc,disabled-by-default-devtools.timeline",
+        "count": 4
+      },
+      {
+        "cat": "loading",
+        "count": 3
+      },
+      {
+        "cat": "devtools.timeline,v8",
+        "count": 2
+      },
+      {
+        "cat": "navigation",
+        "count": 1
+      }
+    ],
+    "timeSpanMs": 676.985
+  }
+}

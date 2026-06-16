@@ -3,17 +3,10 @@ node_modules/
 # perftale's per-trace index/summary cache
 .perftale/
 
-# raw traces stay local — they are huge and often private
-*.json.gz
-*.trace.json
-!test/fixtures/*.trace.json
-
-# generated real-trace reference summaries are committed; nothing else in examples/
-examples/*
-!examples/.gitkeep
-!examples/*.summary.json
-
 # OS / editor cruft
 .DS_Store
 *.log
 coverage/
+
+# local-only dev traces (clip them into test/fixtures/ with scripts/make-fixture.ts)
+temp/

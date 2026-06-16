@@ -12,7 +12,8 @@
   },
   "scripts": {
     "analyze": "node bin/perftale.ts analyze",
-    "analyze:real": "node scripts/analyze-real.ts",
+    "fixtures:make": "node scripts/make-fixture.ts",
+    "fixtures:snapshot": "node scripts/snapshot-fixtures.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
