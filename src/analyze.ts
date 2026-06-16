@@ -23,16 +23,25 @@ export async function analyzeTrace(
 ): Promise<Analysis> {
   const reducer = new Reducer();
   const frameEvents: TraceEvent[] = [];
+  // End of the profiling-overhead warmup: the main thread is stalled while the
+  // CPU profiler starts up, which drops every frame at the recording's start.
+  // That is a capture artifact, not app jank, so we exclude it from analysis.
+  let warmupEndUs = 0;
 
   for await (const event of streamTraceEvents(filePath)) {
     const kept = reducer.add(event);
-    if (kept && isFrameEvent(event)) frameEvents.push(event);
+    if (!kept) continue;
+    if (event.name === 'CpuProfiler::StartProfiling' && typeof event.dur === 'number') {
+      warmupEndUs = Math.max(warmupEndUs, event.ts + event.dur);
+    }
+    if (isFrameEvent(event)) frameEvents.push(event);
   }
 
   return {
     reduction: reducer.finish(),
     frames: buildFrameModel(frameEvents, {
       ...(options.fps ? { fps: options.fps } : {}),
+      ...(warmupEndUs > 0 ? { warmupEndUs } : {}),
     }),
   };
 }

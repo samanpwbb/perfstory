@@ -74,6 +74,9 @@ export interface DroppedCluster {
 
 export interface FrameModel {
   refresh: RefreshInfo;
+  /** Profiling-overhead warmup excluded from the analysis (ms from trace start). */
+  warmupMs: number;
+  /** Analyzed window after the warmup, in ms. */
   windowMs: number;
   /** Frames that reached the screen (DrawFrame events). */
   presented: number;
@@ -108,6 +111,12 @@ export interface FrameModel {
 export interface FrameModelOptions {
   /** Override the detected refresh rate (e.g. when capture vsync is ambiguous). */
   fps?: number;
+  /**
+   * Absolute timestamp (µs) up to which events are profiling-overhead warmup
+   * and should be excluded from jank analysis. Typically the end of the
+   * `CpuProfiler::StartProfiling` event.
+   */
+  warmupEndUs?: number;
 }
 
 function median(sorted: number[]): number {
@@ -250,36 +259,27 @@ export function buildFrameModel(
   events: TraceEvent[],
   options: FrameModelOptions = {},
 ): FrameModel {
-  const beginFrameTs: number[] = [];
-  const drawFrameTs: number[] = [];
-  const droppedTs: number[] = [];
-  const mainThreadUs = new Map<string, number>();
+  const beginAll: number[] = [];
+  const drawAll: number[] = [];
+  const droppedAll: number[] = [];
+  const mainFrames: { ts: number; bd: Record<string, unknown> }[] = [];
 
   for (const ev of events) {
     switch (ev.name) {
       case 'BeginFrame':
-        if (ev.ph === 'I') beginFrameTs.push(ev.ts);
+        if (ev.ph === 'I') beginAll.push(ev.ts);
         break;
       case 'DrawFrame':
-        if (ev.ph === 'I') drawFrameTs.push(ev.ts);
+        if (ev.ph === 'I') drawAll.push(ev.ts);
         break;
       case 'DroppedFrame':
-        if (ev.ph === 'I') droppedTs.push(ev.ts);
+        if (ev.ph === 'I') droppedAll.push(ev.ts);
         break;
       case 'SendBeginMainFrameToCommit': {
         if (ev.ph !== 'b') break;
         const bd = ev.args?.['send_begin_mainframe_to_commit_breakdown'];
         if (bd && typeof bd === 'object') {
-          for (const [key, val] of Object.entries(bd as Record<string, unknown>)) {
-            if (
-              key in MAIN_THREAD_PHASES &&
-              typeof val === 'number' &&
-              val > 0 &&
-              val < SENTINEL_US
-            ) {
-              mainThreadUs.set(key, (mainThreadUs.get(key) ?? 0) + val);
-            }
-          }
+          mainFrames.push({ ts: ev.ts, bd: bd as Record<string, unknown> });
         }
         break;
       }
@@ -288,18 +288,46 @@ export function buildFrameModel(
     }
   }
 
-  beginFrameTs.sort((a, b) => a - b);
-  drawFrameTs.sort((a, b) => a - b);
-  droppedTs.sort((a, b) => a - b);
+  beginAll.sort((a, b) => a - b);
+  drawAll.sort((a, b) => a - b);
+  droppedAll.sort((a, b) => a - b);
+
+  // Time reference = trace start (matches what DevTools shows on the timeline).
+  const firsts = [beginAll[0], drawAll[0], droppedAll[0], mainFrames[0]?.ts].filter(
+    (t): t is number => typeof t === 'number',
+  );
+  const originUs = firsts.length ? Math.min(...firsts) : 0;
+
+  // Exclude the profiling-overhead warmup from jank analysis.
+  const warmupEndUs = options.warmupEndUs ?? 0;
+  const analysisStartUs = warmupEndUs > originUs ? warmupEndUs : originUs;
+  const live = (t: number) => t >= analysisStartUs;
+
+  const beginFrameTs = beginAll.filter(live);
+  const drawFrameTs = drawAll.filter(live);
+  const droppedTs = droppedAll.filter(live);
+  const mainThreadUs = new Map<string, number>();
+  for (const frame of mainFrames) {
+    if (!live(frame.ts)) continue;
+    for (const [key, val] of Object.entries(frame.bd)) {
+      if (
+        key in MAIN_THREAD_PHASES &&
+        typeof val === 'number' &&
+        val > 0 &&
+        val < SENTINEL_US
+      ) {
+        mainThreadUs.set(key, (mainThreadUs.get(key) ?? 0) + val);
+      }
+    }
+  }
 
   const refresh = detectRefresh(beginFrameTs, options.fps);
 
   // Presentation cadence: prefer DrawFrame; fall back to BeginFrame.
   const cadence = drawFrameTs.length >= 2 ? drawFrameTs : beginFrameTs;
-  const allTs = [...beginFrameTs, ...drawFrameTs, ...droppedTs];
-  const originUs = allTs.length ? Math.min(...allTs) : 0;
-  const endUs = allTs.length ? Math.max(...allTs) : 0;
-  const windowMs = (endUs - originUs) / 1000;
+  const liveTs = [...beginFrameTs, ...drawFrameTs, ...droppedTs];
+  const endUs = liveTs.length ? Math.max(...liveTs) : analysisStartUs;
+  const windowMs = (endUs - analysisStartUs) / 1000;
 
   // Largest presentation gap overall. May be benign idle OR a main-thread
   // block — the task model disambiguates that later.
@@ -350,10 +378,11 @@ export function buildFrameModel(
     }))
     .sort((a, b) => b.totalMs - a.totalMs || (a.key < b.key ? -1 : 1));
 
-  const latencies = pipelineLatencies(events);
+  const latencies = pipelineLatencies(events.filter((e) => live(e.ts)));
 
   return {
     refresh,
+    warmupMs: (analysisStartUs - originUs) / 1000,
     windowMs,
     presented,
     dropped,

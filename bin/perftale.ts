@@ -42,7 +42,12 @@ function report(file: string, analysis: Analysis, elapsedMs: number): string {
   out.push(
     `  refresh:       ${f.refresh.hz}Hz (${f.refresh.intervalMs.toFixed(2)}ms budget, ${src})`,
   );
-  out.push(`  window:        ${(f.windowMs / 1000).toFixed(2)}s`);
+  if (f.warmupMs > 0) {
+    out.push(
+      `  warmup:        first ${f.warmupMs.toFixed(0)}ms excluded (profiling overhead)`,
+    );
+  }
+  out.push(`  window:        ${(f.windowMs / 1000).toFixed(2)}s analyzed`);
   out.push(
     `  presented:     ${f.presented} frames (${f.presentationFps.toFixed(1)} fps avg, incl. idle vsyncs)`,
   );

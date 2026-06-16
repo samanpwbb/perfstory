@@ -98,6 +98,17 @@ describe('buildFrameModel', () => {
     expect(paint?.sharePct).toBeCloseTo((2000 / 3500) * 100, 3);
   });
 
+  it('excludes profiling-overhead warmup from jank analysis', () => {
+    // Cut off just after both dropped frames (at 3*BUDGET and 4*BUDGET).
+    const m = buildFrameModel(scene(), { warmupEndUs: BUDGET * 4 + 1 });
+    expect(m.warmupMs).toBeCloseTo((BUDGET * 4 + 1) / 1000, 3);
+    expect(m.dropped).toBe(0);
+    expect(m.droppedClusters).toHaveLength(0);
+    expect(m.worstFreezeMs).toBe(0);
+    // only the post-warmup DrawFrame (at 100_000µs) survives
+    expect(m.presented).toBe(1);
+  });
+
   it('is deterministic across runs', () => {
     expect(JSON.stringify(buildFrameModel(scene()))).toBe(
       JSON.stringify(buildFrameModel(scene())),
