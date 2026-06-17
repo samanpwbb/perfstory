@@ -26,7 +26,9 @@ perftale <trace.json[.gz]> [--fps <n>] [--json] [--debug]
   (rarely needed).
 
 No trace yet? Have the user record one: DevTools → Performance → Record →
-reload/interact → Stop → "Save profile…".
+reload/interact → Stop → "Save profile…". To investigate a **memory leak**, tick the
+**Memory** checkbox before recording and capture ~20–30s on the suspect screen (idle is
+ideal) so the heap-floor trend is unambiguous — without it the MEMORY section is `null`.
 
 ## Reading the output
 
@@ -110,6 +112,27 @@ can't see it.
   scavenge; treat as leads, not the culprit. For ground truth, capture a sampling heap
   profile (DevTools → Memory → "Allocation sampling").
 
+**MEMORY** — retained-memory growth over the recording, from the DevTools Memory
+counters (`null` unless recorded with the **Memory** checkbox on). This is the
+leak detector: a CPU profile shows where time _goes_, this shows what is _retained_.
+
+- The verdict line is `leak likely` / `possible growth` / `no sustained growth`. The
+  signal is a **rising post-GC heap floor** (the lower envelope, with the
+  allocate-then-collect sawtooth stripped) — the live set the collector can't reclaim
+  climbing even as GC runs. A flat floor under a tall sawtooth is just churn, not a leak.
+- **`leak likely` vs `possible growth` turns on activity** (`N% idle`): memory climbing
+  while the app sits **idle** is the strong signal (it shouldn't grow when nothing is
+  happening); climbing **under load** may be a working set filling up, so it's hedged —
+  record ~30s on an idle/stable screen to be sure.
+- Per-counter rows: `heap` (floor rate + sawtooth range), `listeners`, `nodes`,
+  `documents`. **A monotonic, never-released `listeners` climb is the classic leak** —
+  an `addEventListener`/`.on()`/`subscribe`/`setInterval`/observer added without its
+  paired removal. Rising `nodes` = detached DOM retained; rising `documents` = detached
+  iframes retained. `heap` growing while these are flat = retained JS objects.
+- `suspected sources` — **a heuristic** (like GC allocators): the JS hottest while memory
+  grew. A lead on _where_, not proof — the registering code can be cold. Confirm by
+  diffing two DevTools heap snapshots to see which retained objects grew.
+
 **REACT** — component renders, from React DevTools' own User Timing measures (`null`
 unless recorded with DevTools attached, i.e. local dev). Authoritative, not a heuristic.
 
@@ -172,6 +195,20 @@ unless recorded with DevTools attached, i.e. local dev). Authoritative, not a he
   layout animations when many nodes move.
 - Reduce simultaneously animating nodes / composited layers.
 - Memoize selectors and subtrees to shrink rAF work and re-renders.
+
+**Memory leak (MEMORY says `leak likely`):**
+
+- **Listeners climbing** → find the unbalanced registration: an `addEventListener` /
+  `.on()` / `subscribe` / `setInterval` / `ResizeObserver`/`IntersectionObserver` /
+  ticker callback added on each frame, mount, or update without the paired
+  `removeEventListener`/`.off()`/`clearInterval`/`disconnect`/teardown. A screen left on a
+  running rAF/ticker that keeps re-subscribing is the classic case.
+- **Nodes climbing** → detached DOM kept alive by a lingering JS reference (a cache,
+  closure, or array that outlives the node); drop the reference on cleanup.
+- **Heap climbing, listeners/nodes flat** → retained JS objects: an ever-growing
+  array/map/cache, accumulating closures, or unbounded history/log. Confirm with two
+  DevTools heap snapshots (record → snapshot → wait → snapshot → "Objects allocated
+  between snapshots") to see exactly which constructor's retained count grew.
 
 ## Caveats
 

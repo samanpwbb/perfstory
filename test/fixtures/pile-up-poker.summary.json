@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "trace": "pile-up-poker.trace.json.gz",
   "verdict": {
     "smooth": false,
@@ -43,6 +43,7 @@
       }
     },
     "gc": null,
+    "memory": null,
     "react": null,
     "notes": [
       "Dev build detected (React dev runtime) — record a production build for representative numbers.",
@@ -534,6 +535,7 @@
     ]
   },
   "gc": null,
+  "memory": null,
   "react": null,
   "frameDrops": {
     "count": 1,

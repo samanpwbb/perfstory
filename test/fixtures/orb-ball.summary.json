@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "trace": "orb-ball.trace.json.gz",
   "verdict": {
     "smooth": true,
@@ -51,6 +51,7 @@
         "app": false
       }
     },
+    "memory": null,
     "react": {
       "renderCount": 1023,
       "componentCount": 10,
@@ -919,6 +920,7 @@
       }
     ]
   },
+  "memory": null,
   "react": {
     "source": "react-user-timing",
     "componentCount": 10,

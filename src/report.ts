@@ -529,6 +529,82 @@ export function renderReport(
     }
   }
 
+  // ── MEMORY — retained-memory growth from the DevTools Memory counters. ────
+  const mem = analysis.memory;
+  if (mem) {
+    blank();
+    heading('MEMORY', 'retained memory over the recording (DevTools counters)');
+    const mv = v.memory;
+    const verdictCell =
+      mv?.leak === 'likely'
+        ? c.yellow(`leak likely · heap +${mv.heapMBPerMin.toFixed(0)}MB/min`)
+        : mv?.leak === 'possible'
+          ? c.yellow(`possible growth · heap +${mv.heapMBPerMin.toFixed(0)}MB/min`)
+          : c.green('no sustained growth');
+    const idle =
+      mv && mv.idleFraction !== null ? ` · ${pct0(mv.idleFraction * 100)} idle` : '';
+    out.push(`  ${verdictCell}${c.dim(`${idle} · ${secs(mem.spanMs)} window`)}`);
+
+    const mb = (n: number) => `${(n / 1e6).toFixed(1)}MB`;
+    const num = (n: number) => Math.round(n).toLocaleString();
+    const counterRow = (
+      label: string,
+      t: typeof mem.heap,
+      heap: boolean,
+    ): [string, string] => {
+      const fmt = heap ? mb : num;
+      let trend: string;
+      let range: string;
+      if (heap) {
+        // Raw first→last, plus the floor rate (the leak signal) and sawtooth range.
+        range = `${fmt(t.first)} → ${fmt(t.last)}`;
+        trend = t.growing
+          ? c.yellow(`floor +${((t.slopePerSec * 60) / 1e6).toFixed(0)}MB/min`) +
+            c.dim(` · range ${mb(t.min)}–${mb(t.max)}`)
+          : c.dim(`floor stable · range ${mb(t.min)}–${mb(t.max)}`);
+      } else if (t.growing) {
+        // Describe the climb from the post-cleanup trough, not the leftover first sample.
+        range = `${fmt(t.min)} → ${fmt(t.last)}`;
+        trend = c.yellow(`+${num(t.growth)} never released`);
+      } else {
+        range = `${fmt(t.first)} → ${fmt(t.last)}`;
+        trend = c.dim('stable');
+      }
+      return [label, `${range} ${c.dim('·')} ${trend}`];
+    };
+    const memRows: [string, string][] = [
+      counterRow('heap', mem.heap, true),
+      counterRow('listeners', mem.listeners, false),
+      counterRow('nodes', mem.nodes, false),
+      counterRow('documents', mem.documents, false),
+    ];
+    blank();
+    for (const line of kv(c, memRows)) out.push(line);
+
+    if (mem.growing && mem.suspects.length > 0) {
+      blank();
+      out.push(
+        `  ${c.dim('suspected sources — JS hottest while memory grew; a lead, confirm with a heap snapshot')}`,
+      );
+      const shown = debug ? mem.suspects : mem.suspects.slice(0, 5);
+      for (const line of ranked(
+        c,
+        shown.map((s) => ({
+          metricMs: s.selfMs,
+          secondary: pct0(s.sharePct),
+          app: s.app,
+          name: s.functionName,
+          location: `${shortenUrl(s.url)}:${s.line}`,
+        })),
+        { metric: 'during', secondary: 'share', name: 'function' },
+      )) {
+        out.push(line);
+      }
+      if (mem.suspects.length > shown.length)
+        moreLine(mem.suspects.length - shown.length);
+    }
+  }
+
   // ── REACT — component renders, straight from React DevTools timing. ───────
   const react = analysis.react;
   if (react && react.components.length > 0) {

@@ -1,5 +1,134 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`renderReport > memory-growth.trace.json.gz renders a stable --debug report 1`] = `
+"perftale  memory-growth.trace.json.gz
+
+VERDICT
+  60fps, 0 dropped frames — running close to budget
+  bound    animation · 84% of main-thread frame time
+  hotspot  collectRenderablesSimple  assets/pixi-DRolKATm.js:13 · 25ms self
+  notes
+    • Browser extensions were active during capture — engine/native time is inflated.
+
+SIZE  noise reduction
+  88,955 events → 88,665 kept (99.7%), 290 noise dropped (0.3%)
+
+FRAMES  smoothness
+  refresh       60Hz · 16.67ms budget · detected, 100% confidence
+  warmup        first 242ms excluded (profiling overhead)
+  window        1.24s analyzed
+  presented     75 frames · 60.4 fps avg, incl. idle vsyncs
+  dropped       0 frames · 0.0% of attempted
+  largest gap   17.5ms at 1.38s · idle — no long task
+  pipeline lat  p50 40.7ms / p95 41.6ms / max 58.3ms (latency, not frame interval)
+
+  main-thread frame time — where the budget goes
+     time  share  phase
+  204.1ms    84%  animation / rAF callbacks
+   23.6ms    10%  paint
+    9.1ms     4%  update layers
+    5.5ms     2%  pre-paint
+    1.6ms     1%  composite commit
+    0.1ms     0%  input handlers
+    0.0ms     0%  compositing inputs
+
+MEMORY  retained memory over the recording (DevTools counters)
+  no sustained growth · 66% idle · 1.26s window
+
+  heap       106.4MB → 127.5MB · floor stable · range 106.4MB–127.5MB
+  listeners  22,320 → 24,406 · stable
+  nodes      6,913 → 6,913 · stable
+  documents  3 → 3 · stable
+
+JS  self-time by function
+  active CPU 427ms: 164ms JS / 262ms engine+native / 0ms GC (idle 822ms)
+    self  share       function                   location
+  25.5ms    16%  APP  collectRenderablesSimple   assets/pixi-DRolKATm.js:13
+  24.3ms    15%  APP  _getGlobalBoundsRecursive  assets/pixi-DRolKATm.js:13
+  23.0ms    14%  APP  updateLayout               assets/index-CyoXiGX1.js:896
+   5.1ms     3%  APP  break                      assets/pixi-DRolKATm.js:47
+   4.9ms     3%  APP  _updateSize                assets/index-CyoXiGX1.js:896
+   4.8ms     3%  APP  (anonymous)                assets/index-CyoXiGX1.js:1397
+   4.4ms     3%  APP  addRenderable              assets/pixi-DRolKATm.js:813
+   4.4ms     3%       connectPort                build/proxy.js:1
+   3.9ms     2%  APP  (anonymous)                assets/index-CyoXiGX1.js:1866
+   3.6ms     2%  APP  n1                         assets/index-CyoXiGX1.js:895
+   3.4ms     2%  APP  _tick                      assets/pixi-DRolKATm.js:13
+   3.4ms     2%  APP  (anonymous)                assets/index-CyoXiGX1.js:2407
+   2.4ms     1%  APP  addRenderable              assets/pixi-DRolKATm.js:1054
+   2.1ms     1%  APP  updateGpuContext           assets/pixi-DRolKATm.js:261
+   1.8ms     1%  APP  F_                         assets/index-CyoXiGX1.js:1397
+   1.5ms     1%  APP  moveTo                     assets/pixi-DRolKATm.js:261
+   1.5ms     1%  APP  packQuadAttributes         assets/pixi-DRolKATm.js:261
+   1.5ms     1%  APP  _updateRenderGroups        assets/pixi-DRolKATm.js:1054
+   1.2ms     1%  APP  getGlSource                assets/pixi-DRolKATm.js:1339
+   1.2ms     1%  APP  (anonymous)                assets/index-CyoXiGX1.js:2098
+   1.1ms     1%       handleDisconnect           build/proxy.js:1
+   1.1ms     1%  APP  bindSource                 assets/pixi-DRolKATm.js:1339
+   1.0ms     1%  APP  bind                       assets/pixi-DRolKATm.js:1056
+   1.0ms     1%  APP  R9                         assets/index-CyoXiGX1.js:1866
+   1.0ms     1%  APP  execute                    assets/pixi-DRolKATm.js:813
+
+scanned in 0.0s"
+`;
+
+exports[`renderReport > memory-growth.trace.json.gz renders a stable default report 1`] = `
+"perftale  memory-growth.trace.json.gz
+
+VERDICT
+  60fps, 0 dropped frames — running close to budget
+  bound    animation · 84% of main-thread frame time
+  hotspot  collectRenderablesSimple  assets/pixi-DRolKATm.js:13 · 25ms self
+  notes
+    • Browser extensions were active during capture — engine/native time is inflated.
+
+FRAMES  smoothness
+  refresh      60Hz · 16.67ms budget · detected, 100% confidence
+  warmup       first 242ms excluded (profiling overhead)
+  window       1.24s analyzed
+  presented    75 frames · 60.4 fps avg, incl. idle vsyncs
+  dropped      0 frames · 0.0% of attempted
+  largest gap  17.5ms at 1.38s · idle — no long task
+
+  main-thread frame time — where the budget goes
+     time  share  phase
+  204.1ms    84%  animation / rAF callbacks
+   23.6ms    10%  paint
+    9.1ms     4%  update layers
+    5.5ms     2%  pre-paint
+    1.6ms     1%  composite commit
+    0.1ms     0%  input handlers
+    0.0ms     0%  compositing inputs
+
+MEMORY  retained memory over the recording (DevTools counters)
+  no sustained growth · 66% idle · 1.26s window
+
+  heap       106.4MB → 127.5MB · floor stable · range 106.4MB–127.5MB
+  listeners  22,320 → 24,406 · stable
+  nodes      6,913 → 6,913 · stable
+  documents  3 → 3 · stable
+
+JS  self-time by function
+  active CPU 427ms: 164ms JS / 262ms engine+native / 0ms GC (idle 822ms)
+    self  share       function                   location
+  25.5ms    16%  APP  collectRenderablesSimple   assets/pixi-DRolKATm.js:13
+  24.3ms    15%  APP  _getGlobalBoundsRecursive  assets/pixi-DRolKATm.js:13
+  23.0ms    14%  APP  updateLayout               assets/index-CyoXiGX1.js:896
+   5.1ms     3%  APP  break                      assets/pixi-DRolKATm.js:47
+   4.9ms     3%  APP  _updateSize                assets/index-CyoXiGX1.js:896
+   4.8ms     3%  APP  (anonymous)                assets/index-CyoXiGX1.js:1397
+   4.4ms     3%  APP  addRenderable              assets/pixi-DRolKATm.js:813
+   4.4ms     3%       connectPort                build/proxy.js:1
+   3.9ms     2%  APP  (anonymous)                assets/index-CyoXiGX1.js:1866
+   3.6ms     2%  APP  n1                         assets/index-CyoXiGX1.js:895
+   3.4ms     2%  APP  _tick                      assets/pixi-DRolKATm.js:13
+   3.4ms     2%  APP  (anonymous)                assets/index-CyoXiGX1.js:2407
+   2.4ms     1%  APP  addRenderable              assets/pixi-DRolKATm.js:1054
+   2.1ms     1%  APP  updateGpuContext           assets/pixi-DRolKATm.js:261
+   1.8ms     1%  APP  F_                         assets/index-CyoXiGX1.js:1397
+  … and 10 more (--debug)"
+`;
+
 exports[`renderReport > orb-ball.trace.json.gz renders a stable --debug report 1`] = `
 "perftale  orb-ball.trace.json.gz
 

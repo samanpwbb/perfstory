@@ -1,0 +1,476 @@
+{
+  "schemaVersion": 8,
+  "trace": "memory-growth.trace.json.gz",
+  "verdict": {
+    "smooth": true,
+    "headline": "60fps, 0 dropped frames — running close to budget",
+    "bound": "animation",
+    "boundSharePct": 83.6897979259745,
+    "domainsMs": {
+      "animation": 204.178,
+      "layout": 5.5569999999999995,
+      "paint/composite": 34.23500000000001
+    },
+    "largestGap": {
+      "ms": 17.538,
+      "atMs": 1383.103,
+      "blocked": false,
+      "blockingTaskMs": null
+    },
+    "worstFreeze": null,
+    "topAppHotspot": {
+      "functionName": "collectRenderablesSimple",
+      "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+      "line": 13,
+      "selfMs": 25.468000000000018
+    },
+    "reflow": null,
+    "gc": null,
+    "memory": {
+      "heapMBPerMin": 980.8242020731789,
+      "heapGrowthMB": 20.533783529382482,
+      "listenerGrowth": 2086,
+      "nodeGrowth": 0,
+      "idleFraction": 0.6582229537278234,
+      "leak": "none",
+      "kind": null,
+      "topSuspect": null
+    },
+    "react": null,
+    "notes": [
+      "Browser extensions were active during capture — engine/native time is inflated."
+    ]
+  },
+  "frames": {
+    "refresh": {
+      "hz": 60,
+      "intervalMs": 16.666666666666668,
+      "source": "detected",
+      "confidence": 1
+    },
+    "warmupMs": 241.81,
+    "windowMs": 1241.893,
+    "presented": 75,
+    "dropped": 0,
+    "droppedPct": 0,
+    "presentationFps": 60.39167625552281,
+    "worstFreezeMs": 0,
+    "worstFreezeAtMs": 0,
+    "jankGapCount": 0,
+    "largestGapMs": 17.538,
+    "largestGapAtMs": 1383.103,
+    "mainThread": [
+      {
+        "key": "animate_us",
+        "label": "animation / rAF callbacks",
+        "totalMs": 204.127,
+        "sharePct": 83.66889371644055
+      },
+      {
+        "key": "paint_us",
+        "label": "paint",
+        "totalMs": 23.573,
+        "sharePct": 9.662253555765053
+      },
+      {
+        "key": "update_layers_us",
+        "label": "update layers",
+        "totalMs": 9.05,
+        "sharePct": 3.7094724761241133
+      },
+      {
+        "key": "prepaint_us",
+        "label": "pre-paint",
+        "totalMs": 5.51,
+        "sharePct": 2.2584744025904824
+      },
+      {
+        "key": "composite_commit_us",
+        "label": "composite commit",
+        "totalMs": 1.612,
+        "sharePct": 0.6607369758576874
+      },
+      {
+        "key": "handle_input_events_us",
+        "label": "input handlers",
+        "totalMs": 0.051,
+        "sharePct": 0.020904209533959092
+      },
+      {
+        "key": "compositing_inputs_us",
+        "label": "compositing inputs",
+        "totalMs": 0.047,
+        "sharePct": 0.01926466368815838
+      }
+    ],
+    "pipelineLatencyMs": {
+      "p50": 40.661,
+      "p95": 41.569,
+      "max": 58.285
+    },
+    "droppedClusters": []
+  },
+  "profile": {
+    "tid": 10134568,
+    "sampleCount": 17706,
+    "activeMs": 426.939,
+    "idleMs": 822.235,
+    "gcMs": 0.498,
+    "nativeMs": 262.288,
+    "jsMs": 164.153,
+    "functions": [
+      {
+        "functionName": "collectRenderablesSimple",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 13,
+        "col": 34709,
+        "selfMs": 25.468000000000018,
+        "sharePct": 15.51479412499316,
+        "app": true
+      },
+      {
+        "functionName": "_getGlobalBoundsRecursive",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 13,
+        "col": 38275,
+        "selfMs": 24.329000000000022,
+        "sharePct": 14.82092925502429,
+        "app": true
+      },
+      {
+        "functionName": "updateLayout",
+        "url": "https://orb-ball-frontend.onrender.com/assets/index-CyoXiGX1.js",
+        "line": 896,
+        "col": 35964,
+        "selfMs": 22.973000000000006,
+        "sharePct": 13.994870638977055,
+        "app": true
+      },
+      {
+        "functionName": "break",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 47,
+        "col": 2526,
+        "selfMs": 5.123000000000001,
+        "sharePct": 3.120868945435052,
+        "app": true
+      },
+      {
+        "functionName": "_updateSize",
+        "url": "https://orb-ball-frontend.onrender.com/assets/index-CyoXiGX1.js",
+        "line": 896,
+        "col": 35467,
+        "selfMs": 4.869,
+        "sharePct": 2.9661352518686837,
+        "app": true
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "https://orb-ball-frontend.onrender.com/assets/index-CyoXiGX1.js",
+        "line": 1397,
+        "col": 9714,
+        "selfMs": 4.761000000000001,
+        "sharePct": 2.9003429727144807,
+        "app": true
+      },
+      {
+        "functionName": "addRenderable",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 813,
+        "col": 13888,
+        "selfMs": 4.42,
+        "sharePct": 2.6926099431627812,
+        "app": true
+      },
+      {
+        "functionName": "connectPort",
+        "url": "chrome-extension://fmkadmapgofadopljbjfkapdkoienihi/build/proxy.js",
+        "line": 1,
+        "col": 1141,
+        "selfMs": 4.388000000000001,
+        "sharePct": 2.673115934524499,
+        "app": false
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "https://orb-ball-frontend.onrender.com/assets/index-CyoXiGX1.js",
+        "line": 1866,
+        "col": 3647,
+        "selfMs": 3.9450000000000003,
+        "sharePct": 2.4032457524382744,
+        "app": true
+      },
+      {
+        "functionName": "n1",
+        "url": "https://orb-ball-frontend.onrender.com/assets/index-CyoXiGX1.js",
+        "line": 895,
+        "col": 54166,
+        "selfMs": 3.605,
+        "sharePct": 2.196121910656522,
+        "app": true
+      },
+      {
+        "functionName": "_tick",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 13,
+        "col": 67923,
+        "selfMs": 3.4050000000000002,
+        "sharePct": 2.0742843566672557,
+        "app": true
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "https://orb-ball-frontend.onrender.com/assets/index-CyoXiGX1.js",
+        "line": 2407,
+        "col": 7784,
+        "selfMs": 3.3529999999999993,
+        "sharePct": 2.042606592630046,
+        "app": true
+      },
+      {
+        "functionName": "addRenderable",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 1054,
+        "col": 20164,
+        "selfMs": 2.3799999999999994,
+        "sharePct": 1.4498668924722664,
+        "app": true
+      },
+      {
+        "functionName": "updateGpuContext",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 261,
+        "col": 17388,
+        "selfMs": 2.082,
+        "sharePct": 1.2683289370282602,
+        "app": true
+      },
+      {
+        "functionName": "F_",
+        "url": "https://orb-ball-frontend.onrender.com/assets/index-CyoXiGX1.js",
+        "line": 1397,
+        "col": 2401,
+        "selfMs": 1.7589999999999997,
+        "sharePct": 1.0715612873355953,
+        "app": true
+      },
+      {
+        "functionName": "moveTo",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 261,
+        "col": 44910,
+        "selfMs": 1.544,
+        "sharePct": 0.9405859167971344,
+        "app": true
+      },
+      {
+        "functionName": "packQuadAttributes",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 261,
+        "col": 907,
+        "selfMs": 1.504,
+        "sharePct": 0.9162184059992812,
+        "app": true
+      },
+      {
+        "functionName": "_updateRenderGroups",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 1054,
+        "col": 26538,
+        "selfMs": 1.4900000000000002,
+        "sharePct": 0.9076897772200326,
+        "app": true
+      },
+      {
+        "functionName": "getGlSource",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 1339,
+        "col": 21697,
+        "selfMs": 1.2040000000000002,
+        "sharePct": 0.7334620750153821,
+        "app": true
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "https://orb-ball-frontend.onrender.com/assets/index-CyoXiGX1.js",
+        "line": 2098,
+        "col": 5824,
+        "selfMs": 1.199,
+        "sharePct": 0.7304161361656504,
+        "app": true
+      },
+      {
+        "functionName": "handleDisconnect",
+        "url": "chrome-extension://fmkadmapgofadopljbjfkapdkoienihi/build/proxy.js",
+        "line": 1,
+        "col": 1037,
+        "selfMs": 1.149,
+        "sharePct": 0.6999567476683338,
+        "app": false
+      },
+      {
+        "functionName": "bindSource",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 1339,
+        "col": 16536,
+        "selfMs": 1.067,
+        "sharePct": 0.6500033505327347,
+        "app": true
+      },
+      {
+        "functionName": "bind",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 1056,
+        "col": 8255,
+        "selfMs": 1.0470000000000002,
+        "sharePct": 0.6378195951338081,
+        "app": true
+      },
+      {
+        "functionName": "R9",
+        "url": "https://orb-ball-frontend.onrender.com/assets/index-CyoXiGX1.js",
+        "line": 1866,
+        "col": 2609,
+        "selfMs": 1.024,
+        "sharePct": 0.6238082764250424,
+        "app": true
+      },
+      {
+        "functionName": "execute",
+        "url": "https://orb-ball-frontend.onrender.com/assets/pixi-DRolKATm.js",
+        "line": 813,
+        "col": 3967,
+        "selfMs": 1.004,
+        "sharePct": 0.611624521026116,
+        "app": true
+      }
+    ]
+  },
+  "tasks": {
+    "mainTid": 10134568,
+    "longTaskMs": 50,
+    "longTasks": [],
+    "longTaskCount": 0,
+    "totalLongTaskMs": 0
+  },
+  "reflow": null,
+  "gc": null,
+  "memory": {
+    "tid": 10134568,
+    "spanMs": 1256.114,
+    "sampleCount": 2340,
+    "heap": {
+      "first": 106396580,
+      "last": 127518148,
+      "min": 106396580,
+      "max": 127518148,
+      "slopePerSec": 16347070.034552982,
+      "r2": 0.9980149885160254,
+      "growth": 21121568,
+      "growing": false
+    },
+    "listeners": {
+      "first": 22320,
+      "last": 24406,
+      "min": 22320,
+      "max": 24406,
+      "slopePerSec": 1761.3985192055002,
+      "r2": 0.9933368376562641,
+      "growth": 2086,
+      "growing": false
+    },
+    "nodes": {
+      "first": 6913,
+      "last": 6913,
+      "min": 6913,
+      "max": 6913,
+      "slopePerSec": 0,
+      "r2": 0,
+      "growth": 0,
+      "growing": false
+    },
+    "documents": {
+      "first": 3,
+      "last": 3,
+      "min": 3,
+      "max": 3,
+      "slopePerSec": 0,
+      "r2": 0,
+      "growth": 0,
+      "growing": false
+    },
+    "growing": false,
+    "suspects": []
+  },
+  "react": null,
+  "frameDrops": null,
+  "size": {
+    "total": 88955,
+    "kept": 88665,
+    "dropped": 290,
+    "droppedByReason": {
+      "inspector": 200,
+      "metadata": 50,
+      "source-rundown": 40
+    },
+    "keptByCategory": [
+      {
+        "cat": "disabled-by-default-devtools.timeline",
+        "count": 70837
+      },
+      {
+        "cat": "devtools.timeline",
+        "count": 7022
+      },
+      {
+        "cat": "v8",
+        "count": 5468
+      },
+      {
+        "cat": "cc,benchmark,disabled-by-default-devtools.timeline.frame",
+        "count": 3936
+      },
+      {
+        "cat": "disabled-by-default-devtools.timeline.frame",
+        "count": 404
+      },
+      {
+        "cat": "disabled-by-default-v8.cpu_profiler",
+        "count": 302
+      },
+      {
+        "cat": "v8.execute",
+        "count": 184
+      },
+      {
+        "cat": "blink,devtools.timeline",
+        "count": 154
+      },
+      {
+        "cat": "blink,rail",
+        "count": 152
+      },
+      {
+        "cat": "benchmark,latencyInfo,rail,input.scrolling",
+        "count": 83
+      },
+      {
+        "cat": "benchmark,rail",
+        "count": 76
+      },
+      {
+        "cat": "devtools.timeline,disabled-by-default-v8.gc",
+        "count": 44
+      },
+      {
+        "cat": "navigation",
+        "count": 2
+      },
+      {
+        "cat": "loading",
+        "count": 1
+      }
+    ],
+    "timeSpanMs": 1473.946
+  }
+}

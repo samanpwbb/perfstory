@@ -1,5 +1,6 @@
 import type { FrameModel } from './frames.ts';
 import type { GcModel } from './gc.ts';
+import type { MemoryModel } from './memory.ts';
 import type { ProfileModel } from './profile.ts';
 import { mostRerendered, type ReactModel } from './react.ts';
 import type { ReflowModel } from './reflow.ts';
@@ -80,6 +81,35 @@ export interface ReflowVerdict {
   } | null;
 }
 
+export interface MemoryVerdict {
+  /** Post-GC heap-floor climb, MB per minute (the live-set growth rate). */
+  heapMBPerMin: number;
+  /** Heap-floor rise over the analyzed span, MB. */
+  heapGrowthMB: number;
+  /** Event-listener net rise from the post-cleanup trough (count). */
+  listenerGrowth: number;
+  /** DOM-node net rise (count). */
+  nodeGrowth: number;
+  /**
+   * Share of the window the main thread was idle (0..1), or null without a CPU
+   * profile. Growth while idle is the leak signal; growth under load may be the
+   * working set. The discriminator behind `leak`.
+   */
+  idleFraction: number | null;
+  /** Leak confidence: idle growth → likely; growth under load / no profile → possible. */
+  leak: 'likely' | 'possible' | 'none';
+  /** The most diagnostic growing counter — what to chase first. */
+  kind: 'heap' | 'listeners' | 'nodes' | 'documents' | null;
+  /** Hottest JS while memory grew — a lead on the source (correlation, not proof). */
+  topSuspect: {
+    functionName: string;
+    url: string;
+    line: number;
+    selfMs: number;
+    app: boolean;
+  } | null;
+}
+
 export interface ReactVerdict {
   /** Total render spans React DevTools measured in the window. */
   renderCount: number;
@@ -111,6 +141,8 @@ export interface Verdict {
   reflow: ReflowVerdict | null;
   /** GC pressure summary, when the trace has v8.gc instrumentation. */
   gc: GcVerdict | null;
+  /** Memory-growth summary, when the trace has DevTools Memory counters. */
+  memory: MemoryVerdict | null;
   /** React component-render digest, when the trace has DevTools timing. */
   react: ReactVerdict | null;
   /** Caveats that should temper how the numbers are read. */
@@ -122,6 +154,81 @@ function classifyGap(tasks: TaskModel, ms: number, atMs: number): GapVerdict {
   return { ms, atMs, blocked: block !== null, blockingTaskMs: block?.durMs ?? null };
 }
 
+/**
+ * The memory note: the measured growth, then the actionable direction keyed off
+ * the most diagnostic counter (a listener/node/document climb names a concrete
+ * cleanup bug; bare heap growth is the least specific), then the JS lead and how
+ * to confirm. "Likely" leans on the idle context; "possible" hedges to working set.
+ */
+function memoryNote(m: MemoryModel, v: MemoryVerdict): string {
+  const span = Math.max(1, Math.round(m.spanMs / 1000));
+  const idlePct = v.idleFraction !== null ? `${Math.round(v.idleFraction * 100)}%` : null;
+
+  const facts: string[] = [];
+  if (m.heap.growing) {
+    facts.push(
+      `the JS heap floor rose ~${v.heapMBPerMin.toFixed(0)}MB/min ` +
+        `(+${v.heapGrowthMB.toFixed(0)}MB over ${span}s)`,
+    );
+  }
+  if (m.listeners.growing) {
+    facts.push(
+      `event listeners grew +${v.listenerGrowth} ` +
+        `(${m.listeners.min}→${m.listeners.last}, never released)`,
+    );
+  }
+  if (m.nodes.growing)
+    facts.push(`DOM nodes climbed +${v.nodeGrowth} (detached, retained)`);
+  if (m.documents.growing) {
+    facts.push(
+      `documents climbed +${Math.round(m.documents.growth)} (detached iframes retained)`,
+    );
+  }
+  const factStr = facts.join('; ');
+
+  let cause: string;
+  switch (v.kind) {
+    case 'listeners':
+      cause =
+        ' A listener/subscription/timer is being registered without a matching teardown — ' +
+        'search for addEventListener / .on() / subscribe / setInterval / ResizeObserver added ' +
+        'per-frame or per-update without the paired removal.';
+      break;
+    case 'nodes':
+      cause =
+        ' Detached DOM nodes are kept alive by a lingering JS reference after removal from the document.';
+      break;
+    case 'documents':
+      cause = ' Detached documents/iframes are being retained.';
+      break;
+    default:
+      cause =
+        ' Listeners and nodes are flat, so the retained growth is JS objects (closures, caches, ' +
+        'ever-growing arrays/maps), not DOM.';
+  }
+
+  const lead = v.topSuspect
+    ? ` JS running while it grew (a lead, not proof): ${v.topSuspect.functionName}` +
+      `${v.topSuspect.app ? ' (app code)' : ' (dependency)'} — start there.`
+    : '';
+
+  if (v.leak === 'likely') {
+    const idleClause = idlePct
+      ? ` while the main thread sat idle ${idlePct} of the time — memory shouldn't climb when nothing is happening`
+      : '';
+    return (
+      `Memory leak (likely): ${factStr}${idleClause}.${cause}${lead} ` +
+      `Confirm by diffing two DevTools heap snapshots to see which retained objects grew.`
+    );
+  }
+  const busyClause = idlePct ? ` while the app was busy (${idlePct} idle)` : '';
+  return (
+    `Possible memory growth: ${factStr}${busyClause} — this may be a growing working set rather ` +
+    `than a leak.${cause}${lead} To be sure, record ~30s on an idle/stable screen: if the heap ` +
+    `floor keeps climbing with nothing happening, it's a leak.`
+  );
+}
+
 export function buildVerdict(
   frames: FrameModel,
   profile: ProfileModel | null,
@@ -129,6 +236,7 @@ export function buildVerdict(
   gc: GcModel | null = null,
   react: ReactModel | null = null,
   reflow: ReflowModel | null = null,
+  memory: MemoryModel | null = null,
 ): Verdict {
   const domainsMs: Record<Exclude<Bound, 'idle'>, number> = {
     animation: 0,
@@ -254,6 +362,55 @@ export function buildVerdict(
     }
   }
 
+  let memoryVerdict: MemoryVerdict | null = null;
+  if (memory) {
+    const idleFraction =
+      profile && profile.idleMs + profile.activeMs > 0
+        ? profile.idleMs / (profile.idleMs + profile.activeMs)
+        : null;
+    // Prefer an app-code lead for "start here"; fall back to the hottest overall.
+    const suspect = memory.suspects.find((s) => s.app) ?? memory.suspects[0] ?? null;
+    // Most diagnostic growing counter first: a listener/node/document climb points
+    // at a concrete cleanup bug, bare heap growth is the least specific.
+    const kind: MemoryVerdict['kind'] = memory.listeners.growing
+      ? 'listeners'
+      : memory.nodes.growing
+        ? 'nodes'
+        : memory.documents.growing
+          ? 'documents'
+          : memory.heap.growing
+            ? 'heap'
+            : null;
+    // Growth while idle is the leak signal; growth under load (or with no activity
+    // signal) is hedged to "possible" — it may be a legitimately growing working set.
+    const leak: MemoryVerdict['leak'] = !memory.growing
+      ? 'none'
+      : idleFraction !== null && idleFraction >= 0.5
+        ? 'likely'
+        : 'possible';
+    memoryVerdict = {
+      heapMBPerMin: (memory.heap.slopePerSec * 60) / 1e6,
+      // Floor rise implied by the rate over the window — consistent with the rate,
+      // rather than a raw last−min that would fold in the GC sawtooth.
+      heapGrowthMB: (memory.heap.slopePerSec * (memory.spanMs / 1000)) / 1e6,
+      listenerGrowth: memory.listeners.growth,
+      nodeGrowth: memory.nodes.growth,
+      idleFraction,
+      leak,
+      kind,
+      topSuspect: suspect
+        ? {
+            functionName: suspect.functionName,
+            url: suspect.url,
+            line: suspect.line,
+            selfMs: suspect.selfMs,
+            app: suspect.app,
+          }
+        : null,
+    };
+    if (leak !== 'none') notes.push(memoryNote(memory, memoryVerdict));
+  }
+
   let reflowVerdict: ReflowVerdict | null = null;
   if (reflow) {
     const culprit = reflow.culprits[0] ?? null;
@@ -355,6 +512,7 @@ export function buildVerdict(
     topAppHotspot,
     reflow: reflowVerdict,
     gc: gcVerdict,
+    memory: memoryVerdict,
     react: reactVerdict,
     notes,
   };

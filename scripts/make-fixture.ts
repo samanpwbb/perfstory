@@ -64,6 +64,10 @@ function slim(e: TraceEvent): TraceEvent {
     if (e.name === 'SendBeginMainFrameToCommit') {
       const bd = args['send_begin_mainframe_to_commit_breakdown'];
       if (bd) out.args = { send_begin_mainframe_to_commit_breakdown: bd };
+    } else if (e.name === 'UpdateCounters') {
+      // The memory model reads the live counters (jsHeapSizeUsed, nodes, …).
+      const data = args['data'];
+      if (data) out.args = { data };
     } else if (e.name === 'Profile') {
       const data = args['data'] as Record<string, unknown> | undefined;
       if (data) out.args = { data: { startTime: data['startTime'] } };

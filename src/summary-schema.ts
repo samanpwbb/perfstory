@@ -16,6 +16,7 @@
 import type { FrameDropsModel } from './framedrops.ts';
 import type { FrameModel } from './frames.ts';
 import type { GcModel } from './gc.ts';
+import type { MemoryModel } from './memory.ts';
 import type { ProfileModel } from './profile.ts';
 import type { ReactModel } from './react.ts';
 import type { ReductionStats } from './reduce.ts';
@@ -41,6 +42,11 @@ export interface Summary {
   reflow: ReflowModel | null;
   /** GC pause pressure and suspected allocators; null when the trace has no v8.gc data. */
   gc: GcModel | null;
+  /**
+   * Memory-counter growth — heap post-GC floor, listeners, nodes, documents — with
+   * suspected leak sources; null when the trace carries no DevTools Memory counters.
+   */
+  memory: MemoryModel | null;
   /** Component-render digest from React DevTools timing; null when absent. */
   react: ReactModel | null;
   /**
@@ -61,6 +67,7 @@ export type {
   Hotspot,
   ReflowVerdict,
   GcVerdict,
+  MemoryVerdict,
   ReactVerdict,
 } from './verdict.ts';
 export type {
@@ -69,7 +76,12 @@ export type {
   MainThreadPhase,
   DroppedCluster,
 } from './frames.ts';
-export type { ProfileModel, HotFunction, AllocatorSuspect } from './profile.ts';
+export type {
+  ProfileModel,
+  HotFunction,
+  AllocatorSuspect,
+  WindowedSuspect,
+} from './profile.ts';
 export type {
   TaskModel,
   LongTask,
@@ -77,6 +89,7 @@ export type {
   LongTaskHotFunction,
 } from './tasks.ts';
 export type { GcModel, GcPause } from './gc.ts';
+export type { MemoryModel, CounterTrend } from './memory.ts';
 export type { ReflowModel, ReflowCulprit, ForcedLayout } from './reflow.ts';
 export type { ReactModel, ReactComponent } from './react.ts';
 export type {

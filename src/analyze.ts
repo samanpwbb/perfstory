@@ -6,6 +6,7 @@ import {
   type FrameModel,
 } from './frames.ts';
 import { buildGcModel, isGcEvent, type GcModel } from './gc.ts';
+import { buildMemoryModel, isCounterEvent, type MemoryModel } from './memory.ts';
 import {
   ProfileCollector,
   buildProfileModel,
@@ -35,6 +36,8 @@ export interface Analysis {
   reflow: ReflowModel | null;
   /** GC pressure + heuristic allocation attribution (null without v8.gc data). */
   gc: GcModel | null;
+  /** Memory-counter growth (heap floor, listeners, nodes); null without Memory data. */
+  memory: MemoryModel | null;
   /** React component-render attribution from DevTools timing (null without it). */
   react: ReactModel | null;
   /** Per-freeze work attribution + trace-level coincidence (null without drops). */
@@ -68,6 +71,7 @@ export async function analyzeTrace(
   const taskEvents: TraceEvent[] = [];
   const taskChildEvents: TraceEvent[] = [];
   const gcEvents: TraceEvent[] = [];
+  const counterEvents: TraceEvent[] = [];
   const reactTimingEvents: TraceEvent[] = [];
   const reflowEvents: TraceEvent[] = [];
   const profiles = new ProfileCollector();
@@ -99,6 +103,8 @@ export async function analyzeTrace(
       profiles.add(event);
     } else if (isGcEvent(event)) {
       gcEvents.push(event);
+    } else if (isCounterEvent(event)) {
+      counterEvents.push(event);
     } else if (isReactTimingEvent(event)) {
       reactTimingEvents.push(event);
     } else if (isReflowStackEvent(event)) {
@@ -138,6 +144,10 @@ export async function analyzeTrace(
     ...(tasks.mainTid !== undefined ? { mainTid: tasks.mainTid } : {}),
   });
   const gc = buildGcModel(gcEvents, profiles.list(), { originUs, ...warmup, ...pid });
+  const memory = buildMemoryModel(counterEvents, profiles.list(), {
+    ...warmup,
+    ...pid,
+  });
   const react = buildReactModel(reactTimingEvents, { ...warmup, ...pid });
 
   // Frame-drop attribution joins the models above on the time axis, anchored on
@@ -150,12 +160,13 @@ export async function analyzeTrace(
   });
 
   return {
-    verdict: buildVerdict(frames, profile, tasks, gc, react, reflow),
+    verdict: buildVerdict(frames, profile, tasks, gc, react, reflow, memory),
     frames,
     profile,
     tasks,
     reflow,
     gc,
+    memory,
     react,
     frameDrops,
     reduction: reducer.finish(),
