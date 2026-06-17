@@ -191,6 +191,8 @@ interface ClusterUs {
   startUs: number;
   endUs: number;
   count: number;
+  /** Every dropped-frame timestamp (µs) in the cluster. */
+  membersUs: number[];
 }
 
 /** Group dropped frames that fall within 100ms of each other into one hitch. */
@@ -198,20 +200,28 @@ function clusterDropped(droppedTsUs: number[]): ClusterUs[] {
   if (droppedTsUs.length === 0) return [];
   const gapUs = 100_000;
   const clusters: ClusterUs[] = [];
-  let start = droppedTsUs[0] ?? 0;
-  let prev = start;
-  let count = 1;
+  let members: number[] = [droppedTsUs[0] ?? 0];
+  let prev = members[0] ?? 0;
   for (let i = 1; i < droppedTsUs.length; i++) {
     const ts = droppedTsUs[i] ?? 0;
     if (ts - prev > gapUs) {
-      clusters.push({ startUs: start, endUs: prev, count });
-      start = ts;
-      count = 0;
+      clusters.push({
+        startUs: members[0] ?? 0,
+        endUs: prev,
+        count: members.length,
+        membersUs: members,
+      });
+      members = [];
     }
     prev = ts;
-    count++;
+    members.push(ts);
   }
-  clusters.push({ startUs: start, endUs: prev, count });
+  clusters.push({
+    startUs: members[0] ?? 0,
+    endUs: prev,
+    count: members.length,
+    membersUs: members,
+  });
   return clusters;
 }
 
@@ -251,14 +261,33 @@ function firstAtOrAfter(sorted: number[], t: number): number | null {
   return ans;
 }
 
-/**
- * Build the frame model from the buffered frame events (a tiny subset of the
- * trace). Pure and deterministic.
- */
-export function buildFrameModel(
-  events: TraceEvent[],
-  options: FrameModelOptions = {},
-): FrameModel {
+/** A single freeze: the screen-frozen span around one dropped-frame cluster. */
+export interface Freeze {
+  /** Freeze start — the last presented frame before the drop, ms from origin. */
+  startMs: number;
+  /** Freeze span: the larger of the presentation gap and the dropped span, ms. */
+  durMs: number;
+  /** Freeze window in absolute µs — for windowed CPU attribution. */
+  startUs: number;
+  endUs: number;
+  /** First / last dropped-frame timestamp in the cluster, ms from origin. */
+  dropStartMs: number;
+  dropEndMs: number;
+  /** Every dropped-frame timestamp in the cluster, ms from origin. */
+  dropAtMs: number[];
+  /** Dropped frames in the cluster. */
+  count: number;
+}
+
+interface FrameTimings {
+  beginAll: number[];
+  drawAll: number[];
+  droppedAll: number[];
+  mainFrames: { ts: number; bd: Record<string, unknown> }[];
+}
+
+/** Buffer and sort the frame-event timestamps the model and freezes both need. */
+function collectFrameTimings(events: TraceEvent[]): FrameTimings {
   const beginAll: number[] = [];
   const drawAll: number[] = [];
   const droppedAll: number[] = [];
@@ -291,21 +320,77 @@ export function buildFrameModel(
   beginAll.sort((a, b) => a - b);
   drawAll.sort((a, b) => a - b);
   droppedAll.sort((a, b) => a - b);
+  return { beginAll, drawAll, droppedAll, mainFrames };
+}
 
-  // Time reference = trace start (matches what DevTools shows on the timeline).
-  const firsts = [beginAll[0], drawAll[0], droppedAll[0], mainFrames[0]?.ts].filter(
-    (t): t is number => typeof t === 'number',
-  );
-  const originUs = firsts.length ? Math.min(...firsts) : 0;
+/** Time origin = first frame event (matches what DevTools shows on the timeline). */
+function originOf(t: FrameTimings): number {
+  const firsts = [
+    t.beginAll[0],
+    t.drawAll[0],
+    t.droppedAll[0],
+    t.mainFrames[0]?.ts,
+  ].filter((x): x is number => typeof x === 'number');
+  return firsts.length ? Math.min(...firsts) : 0;
+}
+
+/**
+ * The freezes in a trace: one per dropped-frame cluster, each the screen-frozen
+ * span from the last presented frame before the cluster to the first one after
+ * it (so idle gaps never masquerade as freezes, and leading/trailing drops not
+ * bracketed by presented frames are still covered). This is the per-incident
+ * counterpart to the model's single `worstFreeze`, and the anchor the frame-drop
+ * attribution (`framedrops.ts`) correlates work against. Pure and deterministic.
+ */
+export function computeFreezes(
+  events: TraceEvent[],
+  options: FrameModelOptions = {},
+): Freeze[] {
+  const t = collectFrameTimings(events);
+  const originUs = originOf(t);
+  const warmupEndUs = options.warmupEndUs ?? 0;
+  const analysisStartUs = warmupEndUs > originUs ? warmupEndUs : originUs;
+  const live = (x: number) => x >= analysisStartUs;
+  const drawFrameTs = t.drawAll.filter(live);
+  const droppedTs = t.droppedAll.filter(live);
+
+  return clusterDropped(droppedTs).map((c) => {
+    const lo = lastAtOrBefore(drawFrameTs, c.startUs) ?? c.startUs;
+    const hi = firstAtOrAfter(drawFrameTs, c.endUs) ?? c.endUs;
+    const spanUs = Math.max(hi - lo, c.endUs - c.startUs);
+    return {
+      startMs: (lo - originUs) / 1000,
+      durMs: spanUs / 1000,
+      startUs: lo,
+      endUs: lo + spanUs,
+      dropStartMs: (c.startUs - originUs) / 1000,
+      dropEndMs: (c.endUs - originUs) / 1000,
+      dropAtMs: c.membersUs.map((m) => (m - originUs) / 1000),
+      count: c.count,
+    };
+  });
+}
+
+/**
+ * Build the frame model from the buffered frame events (a tiny subset of the
+ * trace). Pure and deterministic.
+ */
+export function buildFrameModel(
+  events: TraceEvent[],
+  options: FrameModelOptions = {},
+): FrameModel {
+  const timings = collectFrameTimings(events);
+  const { mainFrames } = timings;
+  const originUs = originOf(timings);
 
   // Exclude the profiling-overhead warmup from jank analysis.
   const warmupEndUs = options.warmupEndUs ?? 0;
   const analysisStartUs = warmupEndUs > originUs ? warmupEndUs : originUs;
   const live = (t: number) => t >= analysisStartUs;
 
-  const beginFrameTs = beginAll.filter(live);
-  const drawFrameTs = drawAll.filter(live);
-  const droppedTs = droppedAll.filter(live);
+  const beginFrameTs = timings.beginAll.filter(live);
+  const drawFrameTs = timings.drawAll.filter(live);
+  const droppedTs = timings.droppedAll.filter(live);
   const mainThreadUs = new Map<string, number>();
   for (const frame of mainFrames) {
     if (!live(frame.ts)) continue;
@@ -342,26 +427,21 @@ export function buildFrameModel(
     }
   }
 
-  // Each dropped-frame cluster is a freeze: the screen was stuck from the last
-  // presented frame before the cluster to the first one after it. This counts
-  // actual drops, so idle gaps never masquerade as freezes, and it handles
-  // leading/trailing drops that aren't bracketed by presented frames.
-  const clustersUs = clusterDropped(droppedTs);
-  let worstFreezeUs = 0;
-  let worstFreezeAtUs = originUs;
-  for (const c of clustersUs) {
-    const lo = lastAtOrBefore(drawFrameTs, c.startUs) ?? c.startUs;
-    const hi = firstAtOrAfter(drawFrameTs, c.endUs) ?? c.endUs;
-    const span = Math.max(hi - lo, c.endUs - c.startUs);
-    if (span > worstFreezeUs) {
-      worstFreezeUs = span;
-      worstFreezeAtUs = lo;
+  // Each dropped-frame cluster is a freeze (see computeFreezes); the worst is the
+  // longest, and the clusters double as the dropped-frame timeline.
+  const freezes = computeFreezes(events, options);
+  let worstFreezeMs = 0;
+  let worstFreezeAtMs = 0;
+  for (const f of freezes) {
+    if (f.durMs > worstFreezeMs) {
+      worstFreezeMs = f.durMs;
+      worstFreezeAtMs = f.startMs;
     }
   }
-  const droppedClusters: DroppedCluster[] = clustersUs.map((c) => ({
-    startMs: (c.startUs - originUs) / 1000,
-    endMs: (c.endUs - originUs) / 1000,
-    count: c.count,
+  const droppedClusters: DroppedCluster[] = freezes.map((f) => ({
+    startMs: f.dropStartMs,
+    endMs: f.dropEndMs,
+    count: f.count,
   }));
 
   const presented = drawFrameTs.length;
@@ -388,9 +468,9 @@ export function buildFrameModel(
     dropped,
     droppedPct: denom ? (dropped / denom) * 100 : 0,
     presentationFps: windowMs > 0 ? presented / (windowMs / 1000) : 0,
-    worstFreezeMs: worstFreezeUs / 1000,
-    worstFreezeAtMs: (worstFreezeAtUs - originUs) / 1000,
-    jankGapCount: clustersUs.length,
+    worstFreezeMs,
+    worstFreezeAtMs,
+    jankGapCount: freezes.length,
     largestGapMs: largestGapUs / 1000,
     largestGapAtMs: (largestGapAtUs - originUs) / 1000,
     mainThread,

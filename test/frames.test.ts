@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFrameModel, isFrameEvent } from '../src/frames.ts';
+import { buildFrameModel, computeFreezes, isFrameEvent } from '../src/frames.ts';
 import type { TraceEvent } from '../src/trace-events.ts';
 
 const FRAME_CAT = 'disabled-by-default-devtools.timeline.frame';
@@ -113,5 +113,48 @@ describe('buildFrameModel', () => {
     expect(JSON.stringify(buildFrameModel(scene()))).toBe(
       JSON.stringify(buildFrameModel(scene())),
     );
+  });
+});
+
+describe('computeFreezes', () => {
+  // Two separate freezes (clusters >100ms apart), each bracketed by presented frames.
+  function twoFreezeScene(): TraceEvent[] {
+    return [
+      instant('DrawFrame', 0),
+      instant('DrawFrame', BUDGET),
+      instant('DrawFrame', BUDGET * 2),
+      instant('DrawFrame', 100_000),
+      instant('DrawFrame', 150_000),
+      instant('DrawFrame', 300_000),
+      instant('DroppedFrame', BUDGET * 3),
+      instant('DroppedFrame', BUDGET * 4),
+      instant('DroppedFrame', 200_000),
+    ];
+  }
+
+  it('returns one freeze per dropped-frame cluster, with windows and members', () => {
+    const freezes = computeFreezes(twoFreezeScene());
+    expect(freezes).toHaveLength(2);
+
+    const [first, second] = freezes;
+    // Freeze 1: last draw before the cluster (2*BUDGET) → first after (100_000µs).
+    expect(first?.startUs).toBe(BUDGET * 2);
+    expect(first?.endUs).toBe(100_000);
+    expect(first?.durMs).toBeCloseTo((100_000 - BUDGET * 2) / 1000, 3);
+    expect(first?.count).toBe(2);
+    expect(first?.dropAtMs).toEqual([(BUDGET * 3) / 1000, (BUDGET * 4) / 1000]);
+
+    // Freeze 2: a single drop bracketed by 150_000µs and 300_000µs.
+    expect(second?.startUs).toBe(150_000);
+    expect(second?.endUs).toBe(300_000);
+    expect(second?.count).toBe(1);
+    expect(second?.dropAtMs).toEqual([200]);
+  });
+
+  it('excludes freezes whose drops fall in the profiling warmup', () => {
+    // Cut off after the first cluster; only the 200_000µs drop survives.
+    const freezes = computeFreezes(twoFreezeScene(), { warmupEndUs: 100_000 });
+    expect(freezes).toHaveLength(1);
+    expect(freezes[0]?.dropAtMs).toEqual([200]);
   });
 });

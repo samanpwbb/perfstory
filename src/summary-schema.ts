@@ -13,6 +13,7 @@
  * `SUMMARY_SCHEMA_VERSION` (see `summary.ts`) — bump it when this shape changes in a
  * way that invalidates saved artifacts.
  */
+import type { FrameDropsModel } from './framedrops.ts';
 import type { FrameModel } from './frames.ts';
 import type { GcModel } from './gc.ts';
 import type { ProfileModel } from './profile.ts';
@@ -42,6 +43,11 @@ export interface Summary {
   gc: GcModel | null;
   /** Component-render digest from React DevTools timing; null when absent. */
   react: ReactModel | null;
+  /**
+   * Per-freeze work attribution + trace-level coincidence verdict ("what caused
+   * each frame drop, and is GC/reflow/long-tasks implicated"); null without drops.
+   */
+  frameDrops: FrameDropsModel | null;
   /** Noise-reduction stats for the streaming pass. */
   size: ReductionStats;
 }
@@ -73,5 +79,16 @@ export type {
 export type { GcModel, GcPause } from './gc.ts';
 export type { ReflowModel, ReflowCulprit, ForcedLayout } from './reflow.ts';
 export type { ReactModel, ReactComponent } from './react.ts';
+export type {
+  FrameDropsModel,
+  FrameDrop,
+  FrameDropWork,
+  FrameDropTask,
+  FrameDropGc,
+  FrameDropReflow,
+  FrameDropCause,
+  CoincidenceRow,
+  CoincidenceVerdict,
+} from './framedrops.ts';
 export type { ReductionStats } from './reduce.ts';
 export type { DropReason } from './filter.ts';

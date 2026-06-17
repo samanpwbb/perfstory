@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "trace": "orb-ball.trace.json.gz",
   "verdict": {
     "smooth": true,
@@ -997,6 +997,7 @@
       }
     ]
   },
+  "frameDrops": null,
   "size": {
     "total": 28353,
     "kept": 28075,

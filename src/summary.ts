@@ -6,7 +6,7 @@ import type { Summary } from './summary-schema.ts';
 export type { Summary } from './summary-schema.ts';
 
 /** Bump when the summary shape changes in a way that invalidates saved artifacts. */
-export const SUMMARY_SCHEMA_VERSION = 6;
+export const SUMMARY_SCHEMA_VERSION = 7;
 
 export function buildSummary(trace: string, analysis: Analysis): Summary {
   return {
@@ -19,6 +19,7 @@ export function buildSummary(trace: string, analysis: Analysis): Summary {
     reflow: analysis.reflow,
     gc: analysis.gc,
     react: analysis.react,
+    frameDrops: analysis.frameDrops,
     size: analysis.reduction,
   };
 }

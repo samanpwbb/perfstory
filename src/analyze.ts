@@ -1,4 +1,10 @@
-import { buildFrameModel, isFrameEvent, type FrameModel } from './frames.ts';
+import { buildFrameDropsModel, type FrameDropsModel } from './framedrops.ts';
+import {
+  buildFrameModel,
+  computeFreezes,
+  isFrameEvent,
+  type FrameModel,
+} from './frames.ts';
 import { buildGcModel, isGcEvent, type GcModel } from './gc.ts';
 import {
   ProfileCollector,
@@ -31,6 +37,8 @@ export interface Analysis {
   gc: GcModel | null;
   /** React component-render attribution from DevTools timing (null without it). */
   react: ReactModel | null;
+  /** Per-freeze work attribution + trace-level coincidence (null without drops). */
+  frameDrops: FrameDropsModel | null;
   reduction: ReductionStats;
 }
 
@@ -132,6 +140,15 @@ export async function analyzeTrace(
   const gc = buildGcModel(gcEvents, profiles.list(), { originUs, ...warmup, ...pid });
   const react = buildReactModel(reactTimingEvents, { ...warmup, ...pid });
 
+  // Frame-drop attribution joins the models above on the time axis, anchored on
+  // the same freezes the frame model derives — so recompute them from the same
+  // (tiny) frame-event subset with the same warmup window.
+  const freezes = computeFreezes(frameEvents, { ...warmup });
+  const frameDrops = buildFrameDropsModel(freezes, tasks, gc, reflow, {
+    profiles: profiles.list(),
+    ...pid,
+  });
+
   return {
     verdict: buildVerdict(frames, profile, tasks, gc, react, reflow),
     frames,
@@ -140,6 +157,7 @@ export async function analyzeTrace(
     reflow,
     gc,
     react,
+    frameDrops,
     reduction: reducer.finish(),
   };
 }

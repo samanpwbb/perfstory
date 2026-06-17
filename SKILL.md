@@ -56,9 +56,26 @@ Inverted pyramid — conclusion first, then the numbers behind it.
 - `main-thread frame time` — where the budget goes (rAF/animation, style recalc,
   layout, paint, composite). Tells you the _domain_: script vs layout vs paint vs compositing.
 
+**FRAME DROPS** — the time-axis join, anchored on each freeze (`null` when nothing
+dropped). This does the cross-referencing for you: per freeze it names the **cause** and
+shows what coincided — the **blocked by** long task, **cpu in freeze** (JS/native/GC self-
+time charged to exactly that span), the **hottest** function during it, and explicit **gc**
+/ **reflow** rows (`none in window` / `no GC instrumentation` so absence is stated, not
+implied). Read the **cause** first; the rest is the evidence.
+
+- `coincidence across the trace` — the "is X my problem" table. Each of `long tasks` / `gc`
+  / `reflow` is `N total · M near a drop → verdict`. **`implicated`** = it landed on a drop;
+  **`cleared`** = it happened but never coincided with one (e.g. _"GC fired 40× but 0 near a
+  drop"_ — not your jank source, stop chasing it); **`n/a`** = no such events; **`capture
+artifact`** = forced reflow driven by a DevTools extension, ignore it.
+- Causes: `long-task` (a task blocked the main thread), `gc`, `forced-reflow`, `script` (JS
+  filled the freeze), `unknown` (no main-thread cause stood out — likely paint/composite or
+  GPU/off-main-thread). Use it to decide which detail section below to open.
+
 **LONG TASKS** — main-thread tasks over the threshold (default 50ms), longest first,
-timestamped. Each blocks the frame loop for its whole duration. Match timestamps to the
-freezes to see which jank each caused. Each task is attributed: a `trigger`
+timestamped. Each blocks the frame loop for its whole duration. The FRAME DROPS section
+already matches these to the freezes; this lists them in full. Each task is attributed: a
+`trigger`
 (`input event` / `timer` / `animation frame` / `script eval` …), a category split
 (`scripting` / `layout` / `paint` / `gc`) from its nested timeline events, and the
 `hottest` JS function sampled during it — the code to open and fix.
@@ -115,7 +132,8 @@ unless recorded with DevTools attached, i.e. local dev). Authoritative, not a he
 
 1. Run `perftale <trace> --json` and read the summary.
 2. **Smooth?** `dropped` ≈ 0% → say so; the remaining signal is how full the budget is.
-   Drops/freezes → note when they happen.
+   Drops/freezes → go straight to **FRAME DROPS**: read each freeze's `cause`, then the
+   `coincidence` table to rule phenomena in or out before opening any detail section.
 3. **Find the domain** from `main-thread frame time`:
    - `animation / rAF` → **JS-bound** → JS section.
    - `style recalc` / `layout` → **layout-bound** (forced reflow, big recalc; common with

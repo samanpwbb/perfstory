@@ -346,6 +346,22 @@ FRAMES  smoothness
   0.1ms     1%  compositing inputs
   0.0ms     0%  input handlers
 
+FRAME DROPS  where the work went during each freeze
+  1 freeze · 3 frames dropped · long tasks implicated
+
+  freeze 47.9ms at 1.20s · 3 frames dropped
+  cause          a 65ms input event task blocked the main thread
+  blocked by     65.4ms input event · scripting 65ms
+  cpu in freeze  11.6ms JS · 34.9ms native · 0.0ms GC
+  hottest        memoized  deps/chunk-4T7UYGQA.js:534 · 1.9ms self
+  gc             no GC instrumentation
+  reflow         3 forced layouts · 0.4ms — DevTools-extension artifact, ignore
+
+  coincidence across the trace
+  long tasks  1 total · caused 1 of 1 freeze  → implicated
+  gc          —                               → n/a
+  reflow      8 total · near 1 of 1 freeze    → capture artifact
+
 LONG TASKS  main-thread tasks over 50ms
   1 task, 65ms total
   65.4ms  at 1.20s  input event · scripting 65ms
@@ -451,6 +467,22 @@ FRAMES  smoothness
   0.6ms     3%  pre-paint
   0.1ms     1%  compositing inputs
   0.0ms     0%  input handlers
+
+FRAME DROPS  where the work went during each freeze
+  1 freeze · 3 frames dropped · long tasks implicated
+
+  freeze 47.9ms at 1.20s · 3 frames dropped
+  cause          a 65ms input event task blocked the main thread
+  blocked by     65.4ms input event · scripting 65ms
+  cpu in freeze  11.6ms JS · 34.9ms native · 0.0ms GC
+  hottest        memoized  deps/chunk-4T7UYGQA.js:534 · 1.9ms self
+  gc             no GC instrumentation
+  reflow         3 forced layouts · 0.4ms — DevTools-extension artifact, ignore
+
+  coincidence across the trace
+  long tasks  1 total · caused 1 of 1 freeze  → implicated
+  gc          —                               → n/a
+  reflow      8 total · near 1 of 1 freeze    → capture artifact
 
 LONG TASKS  main-thread tasks over 50ms
   1 task, 65ms total

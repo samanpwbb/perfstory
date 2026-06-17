@@ -68,14 +68,15 @@ Running with `--json` (or `--out <path>`) writes a structured summary to
 The full output shape is declared as a single TypeScript type in
 [`src/summary-schema.ts`](src/summary-schema.ts) (the `Summary` interface, versioned by `SUMMARY_SCHEMA_VERSION`). Top-level keys:
 
-| key             | meaning                                                                      |
-| --------------- | ---------------------------------------------------------------------------- |
-| `schemaVersion` | artifact schema version; bumps on any shape change                           |
-| `trace`         | source trace filename                                                        |
-| `verdict`       | the conclusion — headline, what the frame is bound by, top hotspot, caveats  |
-| `frames`        | refresh rate, dropped frames, freezes, and where main-thread frame time goes |
-| `profile`       | JS self-time hotspots by function (`null` if the trace has no CPU profile)   |
-| `tasks`         | long main-thread tasks (>50ms)                                               |
-| `gc`            | GC pause pressure and suspected allocators (`null` if no v8.gc data)         |
-| `react`         | component-render digest from React DevTools timing (`null` if absent)        |
-| `size`          | noise-reduction stats for the streaming pass (debug only)                    |
+| key             | meaning                                                                                             |
+| --------------- | --------------------------------------------------------------------------------------------------- |
+| `schemaVersion` | artifact schema version; bumps on any shape change                                                  |
+| `trace`         | source trace filename                                                                               |
+| `verdict`       | the conclusion — headline, what the frame is bound by, top hotspot, caveats                         |
+| `frames`        | refresh rate, dropped frames, freezes, and where main-thread frame time goes                        |
+| `profile`       | JS self-time hotspots by function (`null` if the trace has no CPU profile)                          |
+| `tasks`         | long main-thread tasks (>50ms)                                                                      |
+| `gc`            | GC pause pressure and suspected allocators (`null` if no v8.gc data)                                |
+| `react`         | component-render digest from React DevTools timing (`null` if absent)                               |
+| `frameDrops`    | per-freeze cause + a coincidence verdict (is GC/reflow/long-tasks to blame); `null` if none dropped |
+| `size`          | noise-reduction stats for the streaming pass (debug only)                                           |

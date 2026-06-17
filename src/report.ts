@@ -17,6 +17,12 @@
  */
 import pc from 'picocolors';
 import type { Analysis } from './analyze.ts';
+import type {
+  CoincidenceRow,
+  CoincidenceVerdict,
+  FrameDropGc,
+  FrameDropReflow,
+} from './framedrops.ts';
 
 const { createColors } = pc;
 
@@ -38,6 +44,18 @@ const secs = (ms: number): string => `${(ms / 1000).toFixed(2)}s`;
 const pct1 = (n: number): string => `${n.toFixed(1)}%`;
 const pct0 = (n: number): string => `${n.toFixed(0)}%`;
 
+/** `1 freeze` / `3 frames` — pluralize a noun by count. */
+const plural = (n: number, one: string, many = `${one}s`): string =>
+  `${n} ${n === 1 ? one : many}`;
+
+const VERDICT_LABEL: Record<CoincidenceVerdict, string> = {
+  implicated: 'implicated',
+  coincided: 'coincided',
+  cleared: 'cleared',
+  'n/a': 'n/a',
+  'capture-artifact': 'capture artifact',
+};
+
 /** Non-zero task categories as `scripting 62ms · paint 1ms`, in display order. */
 function categorySummary(cats: {
   scripting: number;
@@ -57,6 +75,23 @@ function categorySummary(cats: {
     .filter(([, ms]) => ms >= 0.5)
     .map(([label, ms]) => `${label} ${ms0(ms)}`)
     .join(' · ');
+}
+
+/** A freeze's GC cell — explicit about absence so an agent can rule GC out. */
+function gcCell(c: Colors, gc: FrameDropGc | null): string {
+  if (!gc) return c.dim('no GC instrumentation');
+  if (gc.count === 0) return c.dim('none in window');
+  return c.yellow(`${plural(gc.count, 'pause')} · ${ms1(gc.totalMs)}`);
+}
+
+/** A freeze's reflow cell — dimmed when it's a DevTools-capture artifact. */
+function reflowCell(c: Colors, r: FrameDropReflow | null): string {
+  if (!r) return c.dim('none forced in trace');
+  if (r.count === 0) return c.dim('none in window');
+  const body = `${plural(r.count, 'forced layout')} · ${ms1(r.forcedMs)}`;
+  return r.captureArtifact
+    ? c.dim(`${body} — DevTools-extension artifact, ignore`)
+    : c.yellow(body);
 }
 
 /** Trim a source url to a filename (and one parent dir for app paths), no query. */
@@ -267,6 +302,92 @@ export function renderReport(
       { metric: 'time', secondary: 'share', name: 'phase' },
     )) {
       out.push(line);
+    }
+  }
+
+  // ── FRAME DROPS — where the work went during each freeze, + coincidence. ──
+  const fd = analysis.frameDrops;
+  if (fd && fd.drops.length > 0) {
+    blank();
+    heading('FRAME DROPS', 'where the work went during each freeze');
+    const co = fd.coincidence;
+    const implicated = [
+      co.longTask.verdict === 'implicated' && 'long tasks',
+      co.gc.verdict === 'implicated' && 'GC',
+      co.reflow.verdict === 'implicated' && 'reflow',
+    ].filter((x): x is string => Boolean(x));
+    const lead = implicated.length
+      ? `${implicated.join(', ')} implicated`
+      : 'no single cause implicated';
+    out.push(
+      `  ${plural(fd.count, 'freeze', 'freezes')} · ${plural(fd.droppedFrames, 'frame')} dropped ${c.dim(`· ${lead}`)}`,
+    );
+
+    const shown = debug ? fd.drops : fd.drops.slice(0, 5);
+    for (const d of shown) {
+      blank();
+      out.push(
+        `  freeze ${ms1(d.durMs)} at ${secs(d.startMs)} ` +
+          c.dim(`· ${plural(d.droppedFrames, 'frame')} dropped`),
+      );
+      const rows: [string, string][] = [['cause', d.note]];
+      if (d.blockingTask) {
+        const t = d.blockingTask;
+        const cats = categorySummary(t.categories);
+        rows.push([
+          'blocked by',
+          `${ms1(t.durMs)} ${t.trigger}${cats ? c.dim(` · ${cats}`) : ''}`,
+        ]);
+      }
+      const w = d.work;
+      rows.push([
+        'cpu in freeze',
+        `${ms1(w.jsMs)} JS · ${ms1(w.nativeMs)} native · ${ms1(w.gcMs)} GC`,
+      ]);
+      const top = w.top[0];
+      if (top) {
+        const name = top.app ? c.green(top.functionName) : top.functionName;
+        rows.push([
+          'hottest',
+          `${name}  ${c.dim(`${shortenUrl(top.url)}:${top.line} · ${ms1(top.selfMs)} self`)}`,
+        ]);
+      }
+      rows.push(['gc', gcCell(c, d.gc)]);
+      rows.push(['reflow', reflowCell(c, d.reflow)]);
+      for (const line of kv(c, rows)) out.push(line);
+    }
+    if (fd.drops.length > shown.length) moreLine(fd.drops.length - shown.length);
+
+    blank();
+    out.push(`  ${c.dim('coincidence across the trace')}`);
+    const coRows: [string, CoincidenceRow][] = [
+      ['long tasks', co.longTask],
+      ['gc', co.gc],
+      ['reflow', co.reflow],
+    ];
+    const labelW = Math.max(...coRows.map(([l]) => l.length));
+    const freezeWord = (n: number): string =>
+      `${n} of ${plural(fd.count, 'freeze', 'freezes')}`;
+    const countsOf = (row: CoincidenceRow): string => {
+      if (row.total === 0) return '—';
+      if (row.freezesCaused > 0)
+        return `${row.total} total · caused ${freezeWord(row.freezesCaused)}`;
+      if (row.freezesNear > 0)
+        return `${row.total} total · near ${freezeWord(row.freezesNear)}`;
+      return `${row.total} total · ${freezeWord(0)}`;
+    };
+    const countsW = Math.max(...coRows.map(([, r]) => countsOf(r).length));
+    for (const [label, row] of coRows) {
+      const color =
+        row.verdict === 'implicated'
+          ? c.yellow
+          : row.verdict === 'cleared'
+            ? c.green
+            : c.dim;
+      out.push(
+        `  ${c.dim(label.padEnd(labelW))}  ${countsOf(row).padEnd(countsW)}  ` +
+          color(`→ ${VERDICT_LABEL[row.verdict]}`),
+      );
     }
   }
 
