@@ -235,19 +235,19 @@ export function buildVerdict(
   const hz = frames.refresh.hz;
   let headline: string;
   if (smooth) {
-    headline = `Smooth at ${hz}fps (0 dropped frames)`;
-    headline +=
-      bound !== 'idle' && boundSharePct >= 50
-        ? ` — but ${boundSharePct.toFixed(0)}% of main-thread frame time is ${bound}; running close to budget.`
-        : '.';
+    headline = `${hz}fps, 0 dropped frames`;
+    if (bound !== 'idle' && boundSharePct >= 50) {
+      headline += ' — running close to budget';
+    }
   } else {
-    headline = `Janky: ${frames.dropped} dropped frames (${frames.droppedPct.toFixed(1)}%)`;
-    if (worstFreeze?.blocked) {
-      headline += `; worst freeze ${worstFreeze.ms.toFixed(0)}ms at ${(worstFreeze.atMs / 1000).toFixed(2)}s, blocked by a ${(worstFreeze.blockingTaskMs ?? 0).toFixed(0)}ms task.`;
-    } else if (worstFreeze) {
-      headline += `; worst freeze ${worstFreeze.ms.toFixed(0)}ms at ${(worstFreeze.atMs / 1000).toFixed(2)}s.`;
-    } else {
-      headline += '.';
+    const n = frames.dropped;
+    headline = `${hz}fps, ${n} dropped frame${n === 1 ? '' : 's'} (${frames.droppedPct.toFixed(1)}%)`;
+    if (worstFreeze) {
+      const at = (worstFreeze.atMs / 1000).toFixed(2);
+      const block = worstFreeze.blocked
+        ? `, blocked by a ${(worstFreeze.blockingTaskMs ?? 0).toFixed(0)}ms task`
+        : '';
+      headline += ` — worst freeze ${worstFreeze.ms.toFixed(0)}ms at ${at}s${block}`;
     }
   }
 

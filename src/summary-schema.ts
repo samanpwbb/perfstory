@@ -60,7 +60,12 @@ export type {
   DroppedCluster,
 } from './frames.ts';
 export type { ProfileModel, HotFunction, AllocatorSuspect } from './profile.ts';
-export type { TaskModel, LongTask } from './tasks.ts';
+export type {
+  TaskModel,
+  LongTask,
+  LongTaskCategories,
+  LongTaskHotFunction,
+} from './tasks.ts';
 export type { GcModel, GcPause } from './gc.ts';
 export type { ReactModel, ReactComponent } from './react.ts';
 export type { ReductionStats } from './reduce.ts';

@@ -1,9 +1,9 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "trace": "orb-ball.trace.json.gz",
   "verdict": {
     "smooth": true,
-    "headline": "Smooth at 60fps (0 dropped frames) — but 96% of main-thread frame time is animation; running close to budget.",
+    "headline": "60fps, 0 dropped frames — running close to budget",
     "bound": "animation",
     "boundSharePct": 96.15705268842608,
     "domainsMs": {

@@ -9,7 +9,12 @@ import {
 import { buildReactModel, isReactTimingEvent, type ReactModel } from './react.ts';
 import { Reducer, type ReductionStats } from './reduce.ts';
 import { streamTraceEvents } from './stream.ts';
-import { buildTaskModel, isTaskEvent, type TaskModel } from './tasks.ts';
+import {
+  buildTaskModel,
+  isTaskChildEvent,
+  isTaskEvent,
+  type TaskModel,
+} from './tasks.ts';
 import type { TraceEvent } from './trace-events.ts';
 import { buildVerdict, type Verdict } from './verdict.ts';
 
@@ -50,6 +55,7 @@ export async function analyzeTrace(
   const reducer = new Reducer();
   const frameEvents: TraceEvent[] = [];
   const taskEvents: TraceEvent[] = [];
+  const taskChildEvents: TraceEvent[] = [];
   const gcEvents: TraceEvent[] = [];
   const reactTimingEvents: TraceEvent[] = [];
   const profiles = new ProfileCollector();
@@ -84,6 +90,13 @@ export async function analyzeTrace(
     } else if (isReactTimingEvent(event)) {
       reactTimingEvents.push(event);
     }
+    // Captured alongside the branches above (not else-if): a long task is
+    // attributed from its nested timeline children, and GC events are both their
+    // own model and a task child. Frame-lifecycle events are excluded so they
+    // can't shadow the finer Layout/Paint children beneath them.
+    if (isTaskChildEvent(event) && !isFrameEvent(event)) {
+      taskChildEvents.push(event);
+    }
   }
 
   const warmup = warmupEndUs > 0 ? { warmupEndUs } : {};
@@ -95,7 +108,13 @@ export async function analyzeTrace(
     ...warmup,
   });
   const profile = buildProfileModel(profiles.list(), { ...warmup, ...pid });
-  const tasks = buildTaskModel(taskEvents, { originUs, ...warmup, ...pid });
+  const tasks = buildTaskModel(taskEvents, {
+    originUs,
+    ...warmup,
+    ...pid,
+    childEvents: taskChildEvents,
+    profiles: profiles.list(),
+  });
   const gc = buildGcModel(gcEvents, profiles.list(), { originUs, ...warmup, ...pid });
   const react = buildReactModel(reactTimingEvents, { ...warmup, ...pid });
 

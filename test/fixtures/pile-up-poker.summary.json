@@ -1,9 +1,9 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "trace": "pile-up-poker.trace.json.gz",
   "verdict": {
     "smooth": false,
-    "headline": "Janky: 3 dropped frames (3.9%); worst freeze 48ms at 1.20s, blocked by a 65ms task.",
+    "headline": "60fps, 3 dropped frames (3.9%) — worst freeze 48ms at 1.20s, blocked by a 65ms task",
     "bound": "paint/composite",
     "boundSharePct": 61.338135475827684,
     "domainsMs": {
@@ -366,7 +366,22 @@
     "longTasks": [
       {
         "startMs": 1202.777,
-        "durMs": 65.436
+        "durMs": 65.436,
+        "trigger": "input event",
+        "categories": {
+          "scripting": 64.709,
+          "rendering": 0.27,
+          "painting": 0.279,
+          "gc": 0,
+          "other": 0
+        },
+        "hotFunction": {
+          "functionName": "memoized",
+          "url": "http://localhost:3000/@fs/Users/samanbemel-benrud/puzmo_repos/games/node_modules/.vite/deps/chunk-4T7UYGQA.js?v=94c64cfa",
+          "line": 534,
+          "selfMs": 2.424,
+          "app": false
+        }
       }
     ],
     "longTaskCount": 1,

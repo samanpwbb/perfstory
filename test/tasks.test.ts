@@ -6,6 +6,10 @@ function runTask(ts: number, durUs: number, pid = 1, tid = 1): TraceEvent {
   return { name: 'RunTask', ph: 'X', ts, dur: durUs, pid, tid, cat: 'devtools.timeline' };
 }
 
+function child(name: string, ts: number, durUs: number, pid = 1, tid = 1): TraceEvent {
+  return { name, ph: 'X', ts, dur: durUs, pid, tid, cat: 'devtools.timeline' };
+}
+
 describe('isTaskEvent', () => {
   it('matches complete RunTask events only', () => {
     expect(isTaskEvent(runTask(0, 1000))).toBe(true);
@@ -47,6 +51,27 @@ describe('buildTaskModel', () => {
       longTaskMs: 50,
     });
     expect(m.longTaskCount).toBe(0);
+  });
+
+  it('attributes the trigger and category split from top-level child events', () => {
+    const task = runTask(1_000, 60_000); // 60ms long task at +0ms
+    const children = [
+      child('EventDispatch', 1_000, 50_000), // top-level: the trigger, scripting
+      child('FunctionCall', 1_100, 49_000), // nested inside EventDispatch — not double-counted
+      child('Layout', 51_500, 8_000), // a second top-level child: rendering
+    ];
+    const m = buildTaskModel([task], {
+      originUs: 1_000,
+      mainPid: 1,
+      longTaskMs: 50,
+      childEvents: children,
+    });
+    const t = m.longTasks[0];
+    expect(t?.trigger).toBe('input event'); // EventDispatch dominates
+    expect(t?.categories.scripting).toBe(50); // nested FunctionCall excluded
+    expect(t?.categories.rendering).toBe(8);
+    expect(t?.categories.painting).toBe(0);
+    expect(t?.hotFunction).toBeNull(); // no profile supplied
   });
 });
 

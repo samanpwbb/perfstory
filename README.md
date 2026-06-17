@@ -1,6 +1,6 @@
 # perftale
 
-Performance optimizing web apps can be painful. Instead of staring at flame charts, just download the Chrome performance trace, and tell your AI agent to use perftale on it. It turns the mostly-noise trace into high signal insights. It is designed for use with web games, but would be useful for any interaction or animation-heavy app.
+Performance optimizing web apps can be painful. Instead of staring at flame charts, just download the Chrome performance trace, and tell your AI agent to use perftale on it. It turns the mostly-noise trace into high signal insights. It is designed for use with web games, and has dedicated React support, but would be useful for any interaction or animation-heavy app.
 
 ## Installation
 
@@ -53,12 +53,10 @@ automatically, runs the analysis, and reads the summary back to find and fix the
 ## Output format
 
 `pnpm analyze --json` (or `--out <path>`) writes a structured summary to
-`.perftale/<trace>.summary.json` — a compact, timestamp-free digest meant to be read
-by an agent or diffed across runs.
+`.perftale/<trace>.summary.json` — a compact, timestamp-free digest meant to be read by an agent or diffed across runs.
 
 The full output shape is declared as a single TypeScript type in
-[`src/summary-schema.ts`](src/summary-schema.ts) (the `Summary` interface, versioned
-by `SUMMARY_SCHEMA_VERSION`). Top-level keys:
+[`src/summary-schema.ts`](src/summary-schema.ts) (the `Summary` interface, versioned by `SUMMARY_SCHEMA_VERSION`). Top-level keys:
 
 | key             | meaning                                                                      |
 | --------------- | ---------------------------------------------------------------------------- |

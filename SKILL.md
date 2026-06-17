@@ -6,13 +6,10 @@ description: Turn a Chrome DevTools performance trace into actionable runtime-pe
 # perftale — Chrome trace → actionable insights
 
 perftale reduces a huge Chrome performance trace (hundreds of MB) into a compact,
-structured summary you can read in one shot, then act on: it tells you whether the
-app is smooth, where the per-frame budget goes, and which functions (with
-`file:line`) to fix.
-
-It is built for **runtime** performance of animation/interaction-heavy apps — 60fps
-game loops, canvas/pixi rendering, DOM + React + Motion UIs. It is NOT about startup
-or load time.
+structured summary: whether the app is smooth, where the per-frame budget goes, and
+which functions (`file:line`) to fix. It targets **runtime** performance of
+animation/interaction-heavy apps — 60fps game loops, canvas/pixi, DOM/React/Motion UIs
+— **not** startup or load time.
 
 ## Running it
 
@@ -20,158 +17,127 @@ or load time.
 perftale analyze <trace.json[.gz]> [--fps <n>] [--json] [--debug]
 ```
 
-(If perftale isn't linked on your PATH, run it from a clone with
-`node bin/perftale.ts analyze <trace.json[.gz]> …` — same arguments.)
+(Not on PATH? Run from a clone: `node bin/perftale.ts analyze <trace> …`.)
 
-- Accepts `.json` or gzipped `.json.gz`; streams it, so a 350MB trace is fine.
-- `--json` writes the structured summary to `.perftale/<trace>.summary.json`
-  (use `--out <path>` for a custom location). Read that file to investigate.
-- `--fps <n>` overrides the refresh rate if detection looks wrong.
-- `--debug` adds pipeline diagnostics (noise reduction, pipeline latency,
-  dropped-frame clusters) — usually not needed.
+- Streams `.json` or gzipped `.json.gz` — a 350MB trace is fine.
+- `--json` writes the summary to `.perftale/<trace>.summary.json` (or `--out <path>`).
+  Read that file to investigate.
+- `--fps <n>` overrides refresh-rate detection; `--debug` adds pipeline diagnostics
+  (rarely needed).
 
-If the user only has a screen recording or a live app, ask them to record a trace:
-DevTools → Performance → Record → reload/interact → Stop → "Save profile…".
+No trace yet? Have the user record one: DevTools → Performance → Record →
+reload/interact → Stop → "Save profile…".
 
-## How to read the output
+## Reading the output
 
-Read top to bottom — it's an inverted pyramid: the conclusion first, then the
-numbers that support it.
+Inverted pyramid — conclusion first, then the numbers behind it.
 
-**VERDICT** — the conclusion, read this first.
+**VERDICT** — read first.
 
-- `headline` — smooth-or-janky in one line (dropped frames, worst freeze + its
-  blocking task).
-- `bound` — the dominant main-thread domain (`animation`, `layout`, or
-  `paint/composite`) and its share. This is where to look.
-- `hotspot` — the top first-party (`APP`) function to open, with `file:line`.
-- `note` — caveats that temper the numbers (dev build, extensions active, large
-  instrumentation-overhead bucket). Heed these before trusting magnitudes.
+- `headline` — the one-line conclusion: refresh rate, dropped frames, and the worst
+  freeze + its blocking task. Smooth or janky is told by the numbers (and `smooth`).
+- `bound` — the dominant main-thread domain (`animation` / `layout` / `paint/composite`)
+  and its share. **This is where to look.**
+- `hotspot` — top first-party (`APP`) function to open, with `file:line`.
+- `note` — caveats that temper the numbers (dev build, extensions, instrumentation
+  overhead). Heed before trusting magnitudes.
 
-**FRAMES** — the smoothness verdict.
+**FRAMES** — smoothness.
 
-- `refresh` — detected display rate; the per-frame budget is `1000/hz` ms (16.67ms at
-  60Hz, 8.33ms at 120Hz).
+- `refresh` — display rate; frame budget = `1000/hz` ms (16.67ms@60Hz, 8.33ms@120Hz).
 - `warmup: first Nms excluded` — the CPU profiler stalls the main thread on startup,
-  dropping every frame; that is a capture artifact and is excluded. Ignore jank in
-  this window.
-- `dropped: N frames — X%` — the headline. 0% dropped = smooth. The % is of _attempted_
-  frames (idle vsyncs don't count against it).
-- `worst freeze` — longest screen-frozen span that actually contained dropped frames
-  (real jank), with a timestamp.
-- `largest gap` — longest gap between presented frames _regardless of drops_, with a
-  verdict: `idle — no long task` (the app had nothing to draw; benign) or
-  `main thread blocked by a Nms task` (real — go find that task). `worst freeze` is
-  likewise annotated `blocked by a Nms task` when one explains it.
-- `main-thread frame time` — where the frame budget goes: `animation / rAF callbacks`,
-  `style recalc`, `layout`, `paint`, `composite commit`, etc. This tells you the
-  _domain_ of the problem (script vs layout vs paint vs compositing).
+  dropping every frame. Capture artifact, not jank — ignore drops in this window.
+- `dropped  N frames · X% of attempted` — the headline number. 0% = smooth. Percent is
+  of _attempted_ frames (idle vsyncs don't count).
+- `worst freeze` — longest frozen span that actually dropped frames (real jank),
+  timestamped and annotated with its blocking task when one explains it.
+- `largest gap` — longest gap between presented frames regardless of drops, annotated
+  `idle — no long task` (benign) or `blocked by a Nms task` (real — go find that task).
+- `main-thread frame time` — where the budget goes (rAF/animation, style recalc,
+  layout, paint, composite). Tells you the _domain_: script vs layout vs paint vs compositing.
 
 **LONG TASKS** — main-thread tasks over the threshold (default 50ms), longest first,
-with timestamps. Each blocks the frame loop for its whole duration, so these are
-directly actionable. Match their timestamps against the dropped-frame clusters /
-freezes to see which jank each one caused.
+timestamped. Each blocks the frame loop for its whole duration. Match timestamps to the
+freezes to see which jank each caused. Each task is attributed: a `trigger`
+(`input event` / `timer` / `animation frame` / `script eval` …), a category split
+(`scripting` / `layout` / `paint` / `gc`) from its nested timeline events, and the
+`hottest` JS function sampled during it — the code to open and fix.
 
-**GC PRESSURE** — garbage-collection cost and likely cause (present only when the
-trace has V8 GC instrumentation; `gc: null` otherwise).
+**GC PRESSURE** — GC cost and likely cause (`null` if the trace has no V8 GC instrumentation).
 
-- `N scavenges (X/s, Yms) + M mark-compact … — Zms of main-thread pauses` — V8's
-  synchronous GC pauses on the main thread, from instrumented `MinorGC` (young-gen
-  scavenge) and `MajorGC` (old-gen mark-compact) events. This is more precise than
-  the sampled `Zms GC` in the JS section, and unlike it carries bytes freed.
-- `~NNNmb young garbage collected` — heap reclaimed by scavenges ≈ short-lived
-  allocation volume. A high scavenge rate (`/s`) reclaiming a lot of young garbage is
-  the classic game-loop GC-pressure signature: per-frame allocation churn.
-- `suspected allocators` — **a heuristic, not proof.** The JS hottest in the run-up to
-  each scavenge, aggregated; the function consistently busy just before GC is the
-  likely heavy allocator. A scavenge fires on whichever allocation crosses the
-  new-space limit, so treat these as leads. Rows use the same
-  `preGcMs share% APP fn file:line` layout as the JS section. For exact per-function
-  allocation, capture a sampling heap profile (DevTools → Memory → "Allocation
-  sampling") — that's the ground truth a performance trace can't give.
+- `N scavenges … + M mark-compact … — Zms pauses` — synchronous main-thread GC pauses
+  from instrumented `MinorGC`/`MajorGC`. More precise than the sampled `GC` in the JS
+  section, and carries bytes freed.
+- `~NNNmb young garbage` — a high scavenge rate reclaiming lots of young garbage is the
+  classic game-loop signature: per-frame allocation churn.
+- `suspected allocators` — **a heuristic, not proof.** The JS hottest just before each
+  scavenge; treat as leads, not the culprit. For ground truth, capture a sampling heap
+  profile (DevTools → Memory → "Allocation sampling").
 
-**REACT (component renders, measured by React DevTools)** — which components
-re-render, and how often (present only when the trace was recorded with React
-DevTools attached, i.e. local dev; `react: null` otherwise). This is React's own
-emitted timing, not a heuristic — names come from the React/DevTools team's User
-Timing measures, so there is no internal-function name list to drift.
+**REACT** — component renders, from React DevTools' own User Timing measures (`null`
+unless recorded with DevTools attached, i.e. local dev). Authoritative, not a heuristic.
 
-- `N renders across M components, Xms wall-clock` — total component-render spans in
-  the window. A render count far above the frame count means components are
-  re-rendering many times per frame.
-- Each row: `selfMs  ×renders  component`. `selfMs` is the component's own render
-  time (excluding nested child components); `×renders` is how many times it rendered.
-  **A high `×renders` is the usual React perf smell** — an unmemoized component (or
-  bad state placement / unstable props) re-rendering on every frame. Sort-by-self
-  surfaces the genuinely expensive renders; sort-by-count surfaces the thrashy ones.
-- Caveat: DevTools recording adds overhead, so these ms are inflated vs a clean
-  capture — read the **counts** as the primary signal and the ms as relative.
+- `N renders across M components` — a render count far above the frame count means
+  components re-render many times per frame.
+- Each row `self  ×renders  component`: **high `×renders` is the usual smell** — an
+  unmemoized component (bad state placement / unstable props) rendering every frame.
+  `self` excludes nested children.
+- DevTools recording inflates the ms — read **counts** as primary, ms as relative.
 
-**JS (self-time by function)** — which code to fix.
+**JS** — self-time by function; the code to fix.
 
-- `active CPU … : Xms JS / Yms engine+native / Zms GC (idle …)` — of non-idle CPU,
-  how much is attributable JS vs engine/native. A large `engine+native` bucket is
-  usually console-instrumentation overhead from recording with DevTools attached — it
-  is NOT app code; do not try to "fix" it.
-- Each row: `selfMs  share%  [APP]  functionName  file:line`. `APP` marks first-party
-  source (not a dependency). Open those `file:line`s first.
+- `active CPU … : Xms JS / Yms engine+native / Zms GC` — a large `engine+native` bucket
+  is usually console-instrumentation overhead from recording with DevTools attached.
+  **Not app code — don't "fix" it.**
+- Each row `self  share  [APP]  fn  location` (a dim header names the columns):
+  `APP` = first-party source. Open those `file:line`s first.
 
 ## Investigation workflow
 
-1. **Run** `perftale analyze <trace> --json` and read the summary.
-2. **Verdict.** If `dropped` ≈ 0%, the app is smooth — say so; the remaining signal is
-   "how close to the edge" (how full the frame budget is). If there are drops/freezes,
-   note when they happen.
+1. Run `perftale analyze <trace> --json` and read the summary.
+2. **Smooth?** `dropped` ≈ 0% → say so; the remaining signal is how full the budget is.
+   Drops/freezes → note when they happen.
 3. **Find the domain** from `main-thread frame time`:
-   - `animation / rAF callbacks` dominant → **JS/script-bound**. Go to the JS section.
-   - `style recalc` / `layout` dominant → **layout-bound** (often forced reflow or huge
-     style recalc; common with DOM/React).
-   - `paint` / `composite commit` / `update layers` dominant → **rendering/compositing-
-     bound** (too many/large layers, layout-animating Motion, large repaints). The JS
-     section will be small here — don't chase JS.
-4. **For JS-bound:** open the top `APP` functions at their `file:line`. Look for work
-   done every frame that shouldn't be: per-frame allocation (GC pressure), recomputing
-   something cacheable, re-triangulating/re-measuring unchanged geometry, walking the
-   whole scene graph. Dependency rows (pixi, motion, earcut, react) tell you _which
-   subsystem_ is hot even when you can't edit it — often you reduce calls into it.
-   If **GC PRESSURE** shows a high scavenge rate, cross-reference its suspected
-   allocators with these hot functions and look for per-frame allocation to pool/reuse.
-5. **For React UIs:** if the **REACT** section is present, check `×renders` first — a
-   component rendering many times per frame is almost always the problem (memoize it,
-   move state down, stabilize props/context). Then check `selfMs` for components whose
-   individual render is expensive. Cross-reference heavy components against the
-   layout/paint domain — a thrashing React tree usually shows up as `style recalc` /
-   `layout` in the frame budget too.
-6. **Map to source** in the repo (the trace gives bundled `file:line`; grep the
-   function name to find the real source).
-7. **Propose and apply a fix**, then **re-record a trace and re-run** to confirm the
-   dropped-frame count / hot-function self-time actually improved.
+   - `animation / rAF` → **JS-bound** → JS section.
+   - `style recalc` / `layout` → **layout-bound** (forced reflow, big recalc; common with DOM/React).
+   - `paint` / `composite` → **rendering-bound** (too many/large layers, layout-animating
+     Motion, big repaints). JS will be small — don't chase it.
+4. **JS-bound:** open the top `APP` functions. Look for per-frame work that shouldn't
+   repeat: allocation (GC), recomputing cacheable values, re-triangulating unchanged
+   geometry, walking the whole scene graph. Dependency rows (pixi/motion/earcut) show
+   which _subsystem_ is hot even when you can't edit it — reduce calls into it.
+   Cross-reference GC suspected-allocators against these hot functions.
+5. **React UIs:** check `×renders` first — a component rendering many times per frame is
+   almost always it (memoize, move state down, stabilize props). Then `selfMs` for
+   expensive individual renders. Heavy React trees usually show up as `style recalc` /
+   `layout` too.
+6. **Map to source:** the trace gives bundled `file:line`; grep the function name for the real source.
+7. **Fix, then re-record and re-run** to confirm dropped frames / hot self-time actually improved.
 
 ## Fix playbooks
 
-**Canvas / pixi game loop (rAF-bound):**
+**Canvas / pixi (rAF-bound):**
 
-- Hoist allocations out of the per-frame loop; reuse objects/arrays/vectors (cuts GC).
-- Cache geometry that doesn't change frame-to-frame (don't re-triangulate/re-measure).
-- Avoid full scene-graph bounds/transform recompute every frame; dirty-flag what moved.
+- Hoist allocations out of the per-frame loop; reuse objects/arrays/vectors.
+- Cache geometry that doesn't change frame-to-frame.
+- Dirty-flag what moved instead of recomputing all bounds/transforms each frame.
 - Batch draws; avoid per-sprite state changes and mid-frame texture uploads.
 
 **DOM / React / Motion (layout/paint/composite-bound):**
 
-- Eliminate forced reflow (reading layout — `offsetWidth`, `getBoundingClientRect` —
+- Eliminate forced reflow (layout reads — `offsetWidth`, `getBoundingClientRect` —
   interleaved with writes inside a frame).
-- Animate `transform`/`opacity`, not layout-affecting properties; prefer Motion's
-  transform animations over layout animations when many nodes animate.
-- Reduce the number of simultaneously animating DOM nodes / composited layers.
-- Memoize selectors and component subtrees so rAF work and re-renders shrink.
+- Animate `transform`/`opacity`, not layout properties; prefer Motion transforms over
+  layout animations when many nodes move.
+- Reduce simultaneously animating nodes / composited layers.
+- Memoize selectors and subtrees to shrink rAF work and re-renders.
 
-## Caveats to keep in mind
+## Caveats
 
-- **Dev builds inflate the numbers.** `jsxDEV` / `react-dom_client` dev internals and a
-  big engine+native bucket mean a development build with React DevTools active. For the
-  cleanest profile, recommend recording a production build without extensions.
-- **Extension-injected scripts** (e.g. `installHook.js` from React DevTools, a
-  `page.bundle.js` from a Redux DevTools extension) can appear and may be mis-tagged
-  `APP`. Treat unfamiliar `file:1`-style entries skeptically.
-- **Pipeline latency ≠ frame interval.** A frame takes a few vsyncs to traverse the
-  compositor pipeline even when perfectly smooth; that latency is not jank.
+- **Dev builds inflate numbers.** `jsxDEV` / `react-dom` dev internals + a big
+  engine+native bucket = a dev build with DevTools active. For clean magnitudes,
+  recommend a production build without extensions.
+- **Extension scripts** (`installHook.js`, a `page.bundle.js`) can appear and be
+  mis-tagged `APP`. Treat unfamiliar `file:1` entries skeptically.
+- **Pipeline latency ≠ frame interval.** A frame takes a few vsyncs through the
+  compositor even when smooth; that's not jank.

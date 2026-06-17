@@ -445,3 +445,121 @@ export function correlateAllocators(
     .sort((a, b) => b.preGcMs - a.preGcMs || (keyOf(a) < keyOf(b) ? -1 : 1))
     .slice(0, options.top ?? 10);
 }
+
+/** CPU-profile self-time charged to one task-sized time window. */
+export interface WindowProfile {
+  /** JS self-time inside the window (ms). */
+  jsMs: number;
+  /** Engine/native (incl. console-instrumentation) self-time (ms). */
+  nativeMs: number;
+  gcMs: number;
+  idleMs: number;
+  /** Hottest JS functions inside the window, biggest self-time first. */
+  top: HotFunction[];
+}
+
+/**
+ * Attribute CPU-profile self-time to a set of disjoint time windows — one per
+ * long task — in a single sweep of the sample timeline. Same charging rule as
+ * `buildProfileModel` (each non-negative inter-sample gap goes to the sample
+ * running during it), but bucketed per window so each long task can name the
+ * function it actually spent its time in. Returns one `WindowProfile` per input
+ * window, in input order (empty when there is no profile or no samples land in
+ * the window).
+ */
+export function attributeWindows(
+  profiles: RawProfile[],
+  windows: ReadonlyArray<{ startUs: number; endUs: number }>,
+  options: { mainPid?: number; top?: number } = {},
+): WindowProfile[] {
+  const empty = (): WindowProfile => ({
+    jsMs: 0,
+    nativeMs: 0,
+    gcMs: 0,
+    idleMs: 0,
+    top: [],
+  });
+  const out = windows.map(empty);
+  const main = pickMainProfile(profiles, options.mainPid);
+  if (!main || windows.length === 0) return out;
+
+  const { tsArr, order } = buildTimeline(main);
+  const memo = new Map<number, Target>();
+  const accs = windows.map(() => ({
+    js: 0,
+    native: 0,
+    gc: 0,
+    idle: 0,
+    fns: new Map<string, HotFunction>(),
+  }));
+
+  // Visit windows in start order with a moving pointer; long tasks are top-level
+  // and never overlap, so each sample falls in at most one window.
+  const idx = windows
+    .map((_, i) => i)
+    .sort((a, b) => windows[a]!.startUs - windows[b]!.startUs);
+  let wp = 0;
+
+  for (let k = 0; k < order.length; k++) {
+    const i = order[k] ?? 0;
+    const tStart = tsArr[i] ?? 0;
+    const tNext = k + 1 < order.length ? (tsArr[order[k + 1] ?? 0] ?? tStart) : tStart;
+    const dt = Math.max(0, tNext - tStart);
+    if (dt === 0) continue;
+    while (wp < idx.length && (windows[idx[wp]!]?.endUs ?? 0) <= tStart) wp++;
+    if (wp >= idx.length) break;
+    const w = idx[wp]!;
+    if (tStart < (windows[w]?.startUs ?? 0)) continue; // in a gap before the next window
+    const acc = accs[w]!;
+
+    const target = resolveTarget(main, main.samples[i] ?? -1, memo);
+    switch (target.kind) {
+      case 'idle':
+        acc.idle += dt;
+        break;
+      case 'gc':
+        acc.gc += dt;
+        break;
+      case 'native':
+        acc.native += dt;
+        break;
+      case 'js': {
+        acc.js += dt;
+        const existing = acc.fns.get(target.key);
+        if (existing) {
+          existing.selfMs += dt / 1000;
+        } else {
+          acc.fns.set(target.key, {
+            functionName: target.fn,
+            url: target.url,
+            line: target.line,
+            col: target.col,
+            selfMs: dt / 1000,
+            sharePct: 0,
+            app: target.app,
+          });
+        }
+        break;
+      }
+    }
+  }
+
+  const topN = options.top ?? 3;
+  const keyOf = (f: HotFunction) => `${f.functionName}@${f.url}:${f.line}`;
+  windows.forEach((_, i) => {
+    const acc = accs[i]!;
+    const jsMs = acc.js / 1000;
+    const top = [...acc.fns.values()]
+      .map((f) => ({ ...f, sharePct: jsMs > 0 ? (f.selfMs / jsMs) * 100 : 0 }))
+      .sort((a, b) => b.selfMs - a.selfMs || (keyOf(a) < keyOf(b) ? -1 : 1))
+      .slice(0, topN);
+    out[i] = {
+      jsMs,
+      nativeMs: acc.native / 1000,
+      gcMs: acc.gc / 1000,
+      idleMs: acc.idle / 1000,
+      top,
+    };
+  });
+  return out;
+}
