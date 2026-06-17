@@ -2,7 +2,7 @@
 /**
  * perftale CLI.
  *
- * `analyze <trace.json[.gz]> [--fps <n>] [--debug] [--out <path>|--json]`
+ * `perftale <trace.json[.gz]> [--fps <n>] [--debug] [--out <path>|--json]`
  * streams the trace once and prints the frame + JS models. The default report
  * is consumer-facing (smoothness verdict + where the budget goes); `--debug`
  * adds the pipeline's own diagnostics. `--out`/`--json` also persist the
@@ -18,7 +18,7 @@ import { buildSummary, serializeSummary } from '../src/summary.ts';
 const USAGE = `perftale — Chrome trace → actionable insights
 
 Usage:
-  perftale analyze <trace.json[.gz]> [--fps <n>] [--debug] [--out <path>|--json]
+  perftale <trace.json[.gz]> [--fps <n>] [--debug] [--out <path>|--json]
 
   --fps <n>     override the detected refresh rate
   --debug       include pipeline diagnostics (noise reduction, latency, clusters)
@@ -61,14 +61,14 @@ function parseArgs(argv: string[]): Args {
   return result;
 }
 
-const [command, ...rest] = process.argv.slice(2);
+const argv = process.argv.slice(2);
 
-if (command !== 'analyze') {
+if (argv.length === 0 || argv.includes('-h') || argv.includes('--help')) {
   process.stdout.write(USAGE);
   process.exit(0);
 }
 
-const { file, fps, debug, out, json } = parseArgs(rest);
+const { file, fps, debug, out, json } = parseArgs(argv);
 if (!file) {
   process.stderr.write(USAGE);
   process.exit(1);

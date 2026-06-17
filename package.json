@@ -11,7 +11,7 @@
     "perftale": "bin/perftale.ts"
   },
   "scripts": {
-    "analyze": "node bin/perftale.ts analyze",
+    "analyze": "node bin/perftale.ts",
     "fixtures:make": "node scripts/make-fixture.ts",
     "fixtures:snapshot": "node scripts/snapshot-fixtures.ts",
     "test": "vitest run",

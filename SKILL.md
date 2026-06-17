@@ -1,6 +1,6 @@
 ---
 name: perftale
-description: Turn a Chrome DevTools performance trace into actionable runtime-performance insights for animation- and interaction-heavy web apps (pixi/canvas game loops, DOM/React/Motion UIs). Use when the user has a recorded performance trace (.json or .json.gz) and wants to find and fix jank, dropped frames, or a slow rAF/render loop — NOT for startup/load-time analysis. Trigger when the user shares a trace file, says "analyze this trace", "why is this janky", "find the dropped frames", "what's eating my frame budget", or asks you to investigate a flame chart.
+description: Turn a Chrome DevTools performance trace into actionable runtime-performance insights for animation- and interaction-heavy web apps. Use when the user has a recorded performance trace (.json or .json.gz) and wants to find and fix jank, dropped frames, or a slow rAF/render loop — NOT for startup/load-time analysis. Trigger when the user shares a trace file, says "analyze this trace", "why is this janky", "find the dropped frames", "what's eating my frame budget", or asks you to investigate a flame chart.
 ---
 
 # perftale — Chrome trace → actionable insights
@@ -14,10 +14,10 @@ animation/interaction-heavy apps — 60fps game loops, canvas/pixi, DOM/React/Mo
 ## Running it
 
 ```
-perftale analyze <trace.json[.gz]> [--fps <n>] [--json] [--debug]
+perftale <trace.json[.gz]> [--fps <n>] [--json] [--debug]
 ```
 
-(Not on PATH? Run from a clone: `node bin/perftale.ts analyze <trace> …`.)
+(Not on PATH? Run from a clone: `pnpm analyze <trace> …` or `node bin/perftale.ts <trace> …`.)
 
 - Streams `.json` or gzipped `.json.gz` — a 350MB trace is fine.
 - `--json` writes the summary to `.perftale/<trace>.summary.json` (or `--out <path>`).
@@ -113,7 +113,7 @@ unless recorded with DevTools attached, i.e. local dev). Authoritative, not a he
 
 ## Investigation workflow
 
-1. Run `perftale analyze <trace> --json` and read the summary.
+1. Run `perftale <trace> --json` and read the summary.
 2. **Smooth?** `dropped` ≈ 0% → say so; the remaining signal is how full the budget is.
    Drops/freezes → note when they happen.
 3. **Find the domain** from `main-thread frame time`:

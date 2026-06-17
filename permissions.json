@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "allow": ["Bash(perftale:*)", "Bash(node bin/perftale.ts:*)", "Bash(pnpm analyze:*)"]
+  }
+}
